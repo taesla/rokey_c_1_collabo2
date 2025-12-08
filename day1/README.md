@@ -10,10 +10,10 @@
   - 그리퍼 기본/고급 기능 테스트
   - ROS2 DOMAIN_ID 설정 (조별 네트워크 격리)
 
-- **2부: 캘리브레이션 (진행 예정)**
+- **2부: 캘리브레이션 ✅ 완료**
   - RealSense D435i 카메라 설정
-  - Hand-Eye Calibration
-  - Eye-to-Hand Calibration
+  - Hand-Eye Calibration (54장 데이터, T_gripper2camera.npy 생성)
+  - Pick & Place 검증
 
 ---
 
@@ -32,24 +32,37 @@
 ## 📁 프로젝트 구조
 
 ```
-day1_gripper_setup/
+day1/
 ├── README.md                          # 메인 문서 (이 파일)
-├── docs/                              # GitHub Pages 슬라이드
-│   ├── index.html                     # 슬라이드 뷰어
-│   └── slide01~11.html                # 아키텍처 슬라이드
+├── Day1_Summary.md                    # 📚 강의자료 + 실습 통합 정리
+├── 협동로봇2 강의자료.pdf               # 원본 강의자료
+│
+├── docs/                              # GitHub Pages 배포용
+│   ├── index.html                     # 인터랙티브 슬라이드 뷰어
+│   ├── ai_studio_code*.html           # 8장 Hand-Eye Calibration 슬라이드
+│   └── 협동로봇2 강의자료.pdf           # PDF 강의자료
+│
+├── html/                              # 슬라이드 원본
+│   ├── index.html                     # 인터랙티브 슬라이드 뷰어
+│   └── ai_studio_code*.html           # 8장 슬라이드
 │
 ├── 1_gripper_setup/                   # 1부: 그리퍼 시스템
 │   ├── onrobot.py                     # OnRobot RG2 제어 클래스
-│   ├── test_gripper_connection.py    # 연결 테스트
-│   ├── test_gripper_basic.py          # 기본 동작 테스트
-│   ├── test_gripper_advanced.py       # 고급 기능 테스트
+│   ├── test_gripper_*.py              # 그리퍼 테스트 스크립트 (3개)
 │   ├── README_GRIPPER_TESTS.md        # 테스트 가이드
 │   ├── setup_ros_domain_id.sh         # ROS_DOMAIN_ID 설정 스크립트
-│   ├── ROS_DOMAIN_ID_GUIDE.md         # DOMAIN_ID 설정 가이드
+│   ├── ROS_DOMAIN_ID_GUIDE.md         # DOMAIN_ID 설정 가이드 (v2.0 팀별 ID)
 │   └── ROS_DOMAIN_ID_SCENARIOS.md     # 분산 시스템 시나리오
 │
-└── 2_calibration/                     # 2부: 캘리브레이션 (TBD)
-    └── (진행 예정)
+└── 2_calibration/                     # 2부: 캘리브레이션 ✅ 완료
+    ├── data_recording.py              # 데이터 수집 스크립트
+    ├── handeye_calibration.py         # 캘리브레이션 실행
+    ├── test.py                        # Pick & Place 검증
+    ├── realsense.py                   # ROS2 카메라 노드
+    ├── onrobot.py                     # 그리퍼 제어
+    ├── T_gripper2camera.npy           # 🎯 변환 행렬 결과물
+    ├── README_CALIBRATION.md          # 캘리브레이션 가이드
+    └── docs/                          # 캘리브레이션 슬라이드
 ```
 
 ---
@@ -254,37 +267,60 @@ source ~/.bashrc
 
 ---
 
-## 📚 Part 2: 캘리브레이션 (진행 예정)
+## 📚 Part 2: 캘리브레이션 ✅ 완료
 
-### 🎯 목표
-- RealSense D435i 카메라 설정 및 테스트
-- Hand-Eye Calibration (손-눈 캘리브레이션)
-- Eye-to-Hand Calibration (외부 카메라 캘리브레이션)
-- ArUco 마커 기반 좌표계 변환
+### 🎯 완료된 작업
+- ✅ RealSense D435i 카메라 설정 (/dev/video10, aligned_depth)
+- ✅ Hand-Eye Calibration (Eye-in-Hand 방식)
+- ✅ 54장 체커보드 이미지 수집
+- ✅ T_gripper2camera.npy 변환 행렬 생성
+- ✅ Pick & Place 검증
 
-### 📋 예정 작업
-1. RealSense SDK 설정
-2. 캘리브레이션 보드 준비
-3. 데이터 수집
-4. 변환 행렬 계산
-5. 정확도 검증
+### 📊 캘리브레이션 결과
+```python
+# T_gripper2camera 변환 행렬
+R_gripper2camera ≈ 단위 행렬 (카메라-그리퍼 거의 평행)
+T_gripper2camera = [30.7mm, 57.6mm, -218.5mm]
+```
+
+### 🔧 사용법
+```bash
+# 1. 데이터 수집
+cd 2_calibration
+python3 data_recording.py   # 'q' 키로 저장, 20장 이상 수집
+
+# 2. 캘리브레이션 실행
+python3 handeye_calibration.py
+
+# 3. 결과 검증
+python3 test.py
+```
+
+> 📖 상세 가이드: [README_CALIBRATION.md](2_calibration/README_CALIBRATION.md)
 
 ---
 
-## 📝 다음 단계
+## 📝 다음 단계 (Day 2~)
 
-1. 로봇팔과 그리퍼 통합 제어
-2. RealSense 카메라 연동
-3. Pick and Place 시나리오 구현
-4. Hand-Eye Calibration
+- [x] ~~로봇팔과 그리퍼 통합 제어~~ ✅
+- [x] ~~RealSense 카메라 연동~~ ✅
+- [x] ~~Hand-Eye Calibration~~ ✅
+- [x] ~~Pick and Place 시나리오 구현~~ ✅
+- [ ] Object Detection (YOLO, Ultralytics)
+- [ ] 음성 명령 처리 (Wakeup Word, STT)
+- [ ] AI 기반 Pick & Place 통합
 
 ---
 
 ## 👥 팀원 정보
 
-- 조: ___조
-- ROS_DOMAIN_ID: 60
-- 장비: 노트북 4대, Doosan 로봇팔 1대, OnRobot RG2 1대
+- 조: Rokey C팀 1조
+- ROS_DOMAIN_ID: 60 (팀별 60~64 사용)
+- 장비: 
+  - 노트북 4대
+  - Doosan M0609 로봇팔 (192.168.137.100)
+  - OnRobot RG2 그리퍼 (192.168.1.1)
+  - Intel RealSense D435i 카메라
 
 ---
 

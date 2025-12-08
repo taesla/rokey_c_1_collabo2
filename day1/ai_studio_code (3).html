@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide 4: Gripper & Modbus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=D2Coding&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .slide { width: 1280px; height: 720px; }
+        .mono { font-family: 'D2Coding', monospace; }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center h-screen">
+    <div class="slide bg-white shadow-2xl rounded-lg flex flex-col p-16">
+        <h2 class="text-4xl font-bold text-slate-800 border-b-4 border-blue-500 pb-4">Topic 2: RG2 Gripper & Modbus 통신</h2>
+        <div class="flex-1 grid grid-cols-2 gap-12 mt-8">
+            <!-- Left: Theory -->
+            <div>
+                <h3 class="text-3xl font-bold text-slate-700 mb-4">이론: Modbus 통신</h3>
+                <p class="text-xl text-slate-600 mb-4">산업용 장비 제어에 널리 쓰이는 표준 시리얼 통신 프로토콜입니다.</p>
+                <div class="bg-slate-50 p-6 rounded-lg border flex flex-col items-center">
+                    <h4 class="text-xl font-bold mb-2">Master-Slave 구조</h4>
+                    <div class="flex items-center">
+                        <div class="bg-blue-500 text-white p-4 rounded-lg shadow-md">Master (PC)</div>
+                        <div class="mx-4 text-slate-500 text-center">
+                            <p class="font-bold text-lg">Request →</p>
+                            <p class="font-bold text-lg">← Response</p>
+                        </div>
+                        <div class="bg-green-500 text-white p-4 rounded-lg shadow-md">Slave (Gripper)</div>
+                    </div>
+                    <p class="mt-4 text-slate-600">Master가 항상 먼저 요청하고, Slave는 그에 응답합니다.</p>
+                </div>
+            </div>
+            <!-- Right: Practice -->
+            <div>
+                <h3 class="text-3xl font-bold text-slate-700 mb-4">실습: 그리퍼 제어</h3>
+                <p class="text-xl text-slate-600 mb-2">네트워크 설정 (PC에 그리퍼용 IP 추가):</p>
+                <div class="bg-gray-800 text-white p-3 rounded-lg text-base mono mb-4">
+                    sudo nmcli connection modify "Wired connection 2" \<br>
+                    ipv4.addresses 192.168.1.100/24 ipv4.method manual
+                </div>
+                <p class="text-xl text-slate-600 mb-2">제어 코드 (pymodbus 2.5.3):</p>
+                <div class="bg-gray-800 text-white p-3 rounded-lg text-base mono">
+                    <span style="color: #C678DD;">from</span> onrobot <span style="color: #C678DD;">import</span> RG<br>
+                    gripper = RG('192.168.1.1')<br>
+                    gripper.open_gripper()<br>
+                    gripper.move(500) <span style="color: #6A9955;"># 50mm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

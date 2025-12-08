@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide 2: Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .slide { width: 1280px; height: 720px; }
+        th, td { padding: 10px 16px; text-align: left; border: 1px solid #e2e8f0; }
+        th { background-color: #f1f5f9; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center h-screen">
+    <div class="slide bg-white shadow-2xl rounded-lg flex flex-col p-16">
+        <h2 class="text-4xl font-bold text-slate-800 border-b-4 border-blue-500 pb-4">학습 개요 및 Day 1 목표</h2>
+        <div class="flex-1 grid grid-cols-2 gap-12 mt-8">
+            <div>
+                <h3 class="text-3xl font-bold text-slate-700 mb-4">전체 프로젝트 목표</h3>
+                <div class="bg-slate-50 p-6 rounded-lg text-xl text-slate-600 border">
+                    사람의 음성명령을 분석하여 해당 물체를 인식하고, 명령한 장소로 이동하는 로봇 제작
+                </div>
+            </div>
+            <div>
+                <h3 class="text-3xl font-bold text-slate-700 mb-4">필요 Skill 및 Day 1 진행 현황</h3>
+                <table class="w-full text-lg">
+                    <thead>
+                        <tr><th>Skill</th><th>Day 1 진행 여부</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Object Detection</td><td class="text-center">❌ <span class="text-sm text-slate-500">(Day 3-5)</span></td></tr>
+                        <tr><td>Wakeup Word / STT</td><td class="text-center">❌ <span class="text-sm text-slate-500">(Day 6-7)</span></td></tr>
+                        <tr><td>LangChain</td><td class="text-center">❌ <span class="text-sm text-slate-500">(Day 7-8)</span></td></tr>
+                        <tr class="bg-green-50"><td><strong>Camera Calibration</strong></td><td class="text-center">✅ <strong>완료</strong></td></tr>
+                        <tr class="bg-green-50"><td><strong>Gripper 제어</strong></td><td class="text-center">✅ <strong>완료</strong></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
