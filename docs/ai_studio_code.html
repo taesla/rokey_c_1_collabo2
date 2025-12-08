@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Slide 1: Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; }
+        .slide { width: 1280px; height: 720px; background: white; padding: 40px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
+        .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; letter-spacing: -1px; }
+        
+        .main-content { flex: 1; display: flex; align-items: center; justify-content: center; gap: 60px; }
+        
+        .badge-container { display: flex; flex-direction: column; gap: 20px; }
+        .badge { background: #f8fafc; border: 2px solid #e2e8f0; padding: 20px 30px; border-radius: 15px; display: flex; align-items: center; gap: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 400px; }
+        .badge-icon { font-size: 40px; }
+        
+        .hero-img { width: 450px; height: 450px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+        .center-text { text-align: center; z-index: 10; }
+        .main-num { font-size: 100px; font-weight: 900; color: #0284c7; line-height: 1; }
+        .sub-text { font-size: 24px; font-weight: 700; color: #0f172a; }
+        
+        .orbit { position: absolute; width: 100%; height: 100%; border: 2px dashed #bae6fd; border-radius: 50%; animation: spin 20s linear infinite; }
+        .planet { position: absolute; width: 40px; height: 40px; background: #3b82f6; border-radius: 50%; top: 0; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <div class="header">
+            <h1><i class="fas fa-network-wired mr-3"></i>ROS_DOMAIN_ID 설정 가이드</h1>
+            <span class="text-xl text-gray-500">Network Isolation Strategy</span>
+        </div>
+        
+        <div class="main-content">
+            <div class="hero-img">
+                <div class="orbit">
+                    <div class="planet">A</div>
+                </div>
+                <div class="orbit" style="width: 70%; height: 70%; animation-direction: reverse; animation-duration: 15s;">
+                    <div class="planet" style="background: #ef4444;">B</div>
+                </div>
+                <div class="center-text">
+                    <div class="sub-text">DOMAIN ID</div>
+                    <div class="main-num">60</div>
+                    <div class="sub-text text-blue-600">ISOLATION</div>
+                </div>
+            </div>
+            
+            <div class="badge-container">
+                <div class="badge border-l-8 border-l-blue-500">
+                    <i class="fas fa-shield-alt badge-icon text-blue-600"></i>
+                    <div>
+                        <div class="font-bold text-gray-800 text-xl">통신 격리 (Isolation)</div>
+                        <div class="text-gray-500">다른 팀과의 간섭 완벽 차단</div>
+                    </div>
+                </div>
+                <div class="badge border-l-8 border-l-green-500">
+                    <i class="fas fa-users badge-icon text-green-600"></i>
+                    <div>
+                        <div class="font-bold text-gray-800 text-xl">팀별 독립성 (Independence)</div>
+                        <div class="text-gray-500">우리 팀만의 안전한 작업 환경</div>
+                    </div>
+                </div>
+                <div class="badge border-l-8 border-l-purple-500">
+                    <i class="fas fa-traffic-light badge-icon text-purple-600"></i>
+                    <div>
+                        <div class="font-bold text-gray-800 text-xl">트래픽 감소 (Traffic)</div>
+                        <div class="text-gray-500">불필요한 데이터 수신 방지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
