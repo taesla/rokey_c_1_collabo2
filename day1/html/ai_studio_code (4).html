@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Slide 5: Concept</title>
+    <title>Slide 5: Verification</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
@@ -12,72 +12,83 @@
         .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
         .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; }
         
-        .diagram-area { flex: 1; position: relative; background: #f8fafc; border-radius: 20px; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; }
+        .verify-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%; }
         
-        .center-hub { position: absolute; width: 120px; height: 120px; background: #0f172a; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; color: white; font-size: 14px; text-align: center; font-weight: 700; box-shadow: 0 0 30px rgba(15, 23, 42, 0.2); flex-direction: column; }
-        .center-hub i { font-size: 30px; margin-bottom: 5px; color: #3b82f6; }
+        .verify-step { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+        .step-header { font-size: 20px; font-weight: 800; color: #334155; margin-bottom: 15px; display: flex; align-items: center; }
+        .step-icon { width: 30px; height: 30px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 10px; }
         
-        .laptop { width: 220px; height: 140px; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: absolute; display: flex; flex-direction: column; align-items: center; border: 2px solid; z-index: 5; }
-        .laptop i { font-size: 40px; margin-bottom: 10px; }
-        .l-title { font-weight: 800; font-size: 16px; margin-bottom: 5px; }
-        .l-desc { font-size: 13px; text-align: center; color: #64748b; }
+        .term-mock { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.6; flex: 1; }
+        .prompt { color: #4ade80; }
+        .output { color: #94a3b8; }
         
-        /* Positioning */
-        .l1 { top: 40px; left: 100px; border-color: #3b82f6; color: #3b82f6; }
-        .l2 { top: 40px; right: 100px; border-color: #ec4899; color: #ec4899; }
-        .l3 { bottom: 40px; right: 100px; border-color: #10b981; color: #10b981; }
-        .l4 { bottom: 40px; left: 100px; border-color: #f59e0b; color: #f59e0b; }
-        
-        /* Connection Lines */
-        .line { position: absolute; background: #cbd5e1; z-index: 1; }
-        .line-h { width: 300px; height: 4px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .line-v { width: 4px; height: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        
-        .data-packet { position: absolute; width: 16px; height: 16px; background: #3b82f6; border-radius: 50%; z-index: 2; animation: flow 2s infinite linear; }
-        @keyframes flow { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
+        .success-box { grid-column: 1 / -1; background: #ecfdf5; border: 2px dashed #34d399; border-radius: 12px; display: flex; align-items: center; justify-content: center; padding: 15px; gap: 15px; }
+        .success-text { font-size: 18px; font-weight: 700; color: #065f46; }
     </style>
 </head>
 <body>
     <div class="slide">
         <div class="header">
-            <h1><i class="fas fa-project-diagram mr-3"></i>분산 작업 시나리오: 4대 노트북 협업</h1>
-            <span class="text-xl text-gray-500">Collaborative Work</span>
+            <h1><i class="fas fa-vial mr-3"></i>설정 확인 및 통신 테스트</h1>
+            <span class="text-xl text-gray-500">Verification</span>
         </div>
         
-        <div class="diagram-area">
-            <!-- Lines -->
-            <div class="line line-h"></div>
-            <div class="line line-v"></div>
-            
-            <!-- Hub -->
-            <div class="center-hub">
-                <i class="fas fa-wifi"></i>
-                <div>WiFi Network<br>ID: 60</div>
+        <div class="verify-grid">
+            <!-- Step 1 -->
+            <div class="verify-step">
+                <div class="step-header">
+                    <div class="step-icon">1</div>
+                    환경 변수 확인
+                </div>
+                <div class="term-mock">
+                    <span class="prompt">$</span> echo $ROS_DOMAIN_ID<br>
+                    <span class="output">60</span><br>
+                    <span class="comment"># 모든 팀원의 숫자가 60으로 동일해야 함</span>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="verify-step">
+                <div class="step-header">
+                    <div class="step-icon">2</div>
+                    Publisher (팀원 A)
+                </div>
+                <div class="term-mock">
+                    <span class="prompt">$</span> ros2 topic pub /test std_msgs/msg/String "data: 'Hello A'"<br>
+                    <span class="output">Publishing: "Hello A"</span>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="verify-step">
+                <div class="step-header">
+                    <div class="step-icon">3</div>
+                    Subscriber (팀원 B)
+                </div>
+                <div class="term-mock">
+                    <span class="prompt">$</span> ros2 topic list<br>
+                    <span class="output">/test</span><br>
+                    <span class="prompt">$</span> ros2 topic echo /test<br>
+                    <span class="output">data: "Hello A"</span>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="verify-step bg-red-50 border-red-200">
+                <div class="step-header text-red-800">
+                    <div class="step-icon bg-red-500">4</div>
+                    격리 확인 (다른 팀)
+                </div>
+                <div class="term-mock">
+                    <span class="prompt">$</span> export ROS_DOMAIN_ID=61<br>
+                    <span class="prompt">$</span> ros2 topic list<br>
+                    <span class="output"># /test 토픽이 안 보여야 정상! ✅</span>
+                </div>
             </div>
             
-            <!-- Laptops -->
-            <div class="laptop l1">
-                <i class="fas fa-robot"></i>
-                <div class="l-title">Laptop 1: Main</div>
-                <div class="l-desc">로봇 드라이버 실행<br>Hardware Interface</div>
-            </div>
-            
-            <div class="laptop l2">
-                <i class="fas fa-eye"></i>
-                <div class="l-title">Laptop 2: Vision</div>
-                <div class="l-desc">카메라 노드 실행<br>Object Detection</div>
-            </div>
-            
-            <div class="laptop l3">
-                <i class="fas fa-gamepad"></i>
-                <div class="l-title">Laptop 3: Control</div>
-                <div class="l-desc">제어 명령 발행<br>Pick & Place Logic</div>
-            </div>
-            
-            <div class="laptop l4">
-                <i class="fas fa-desktop"></i>
-                <div class="l-title">Laptop 4: Monitor</div>
-                <div class="l-desc">RViz 시각화<br>데이터 로깅</div>
+            <div class="success-box">
+                <i class="fas fa-check-circle text-green-500 text-3xl"></i>
+                <div class="success-text">모든 테스트를 통과하면 준비 완료입니다!</div>
             </div>
         </div>
     </div>

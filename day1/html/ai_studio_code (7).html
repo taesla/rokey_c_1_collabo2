@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Slide 7: Pick & Place</title>
+    <title>Slide 8: Checklist</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
@@ -12,88 +12,44 @@
         .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
         .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; }
         
-        .process-flow { display: flex; align-items: center; justify-content: space-between; height: 100%; margin-top: 20px; }
+        .content { display: flex; gap: 40px; height: 100%; align-items: center; }
         
-        .role-box { width: 22%; height: 320px; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; align-items: center; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 6px solid; background: #f8fafc; }
-        .role-icon { width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .role-title { font-size: 20px; font-weight: 800; margin-bottom: 10px; color: #1e293b; }
-        .role-tasks { width: 100%; font-size: 14px; color: #475569; background: white; padding: 15px; border-radius: 8px; flex: 1; }
-        .task-item { display: flex; gap: 8px; margin-bottom: 8px; }
+        .list-box { flex: 1; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px; padding: 30px; height: 100%; }
+        .list-title { font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+        .check-item { display: flex; align-items: center; font-size: 18px; margin-bottom: 15px; color: #334155; }
+        .check-box { width: 24px; height: 24px; border: 2px solid #94a3b8; border-radius: 6px; margin-right: 15px; }
         
-        .arrow { font-size: 30px; color: #cbd5e1; }
-        
-        .r1 { border-color: #3b82f6; } .r1 .role-icon { color: #3b82f6; }
-        .r2 { border-color: #ec4899; } .r2 .role-icon { color: #ec4899; }
-        .r3 { border-color: #10b981; } .r3 .role-icon { color: #10b981; }
-        .r4 { border-color: #f59e0b; } .r4 .role-icon { color: #f59e0b; }
-        
-        .data-flow { position: absolute; top: -15px; background: #e0f2fe; padding: 2px 10px; border-radius: 20px; font-size: 11px; color: #0369a1; font-weight: 700; width: 100%; text-align: center; }
+        .final-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .final-icon { font-size: 100px; color: #3b82f6; margin-bottom: 30px; }
+        .final-text { font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1.4; }
+        .final-sub { font-size: 18px; color: #64748b; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="slide">
         <div class="header">
-            <h1><i class="fas fa-people-carry mr-3"></i>실전 예제 1: 협업 Pick & Place</h1>
-            <span class="text-xl text-gray-500">Collaborative Application</span>
+            <h1><i class="fas fa-clipboard-check mr-3"></i>최종 체크리스트</h1>
+            <span class="text-xl text-gray-500">Ready to Go?</span>
         </div>
         
-        <div class="bg-blue-50 p-4 rounded-lg mb-6 text-center text-blue-900 font-bold border border-blue-100">
-            "각자의 노트북이 하나의 거대한 로봇 시스템의 부품이 됩니다."
-        </div>
-
-        <div class="process-flow">
-            <!-- Laptop 1 -->
-            <div class="role-box r1">
-                <div class="data-flow">Hardware Interface</div>
-                <div class="role-icon"><i class="fas fa-server"></i></div>
-                <div class="role-title">Driver</div>
-                <div class="role-tasks">
-                    <div class="task-item"><i class="fas fa-play text-blue-500"></i> dsr_bringup2</div>
-                    <div class="task-item"><i class="fas fa-play text-blue-500"></i> Robot Connection</div>
-                    <div class="mt-2 text-xs text-gray-400">Main Host</div>
-                </div>
+        <div class="content">
+            <div class="list-box">
+                <div class="list-title">✅ 프로젝트 시작 전 확인</div>
+                <div class="check-item"><div class="check-box"></div>팀 번호 확인 (1~5)</div>
+                <div class="check-item"><div class="check-box"></div>ID 결정 (60~64)</div>
+                <div class="check-item"><div class="check-box"></div>.bashrc 영구 설정 완료</div>
+                <div class="check-item"><div class="check-box"></div>모든 팀원 동일 ID 확인</div>
+                <div class="check-item"><div class="check-box"></div>로봇 연결 전 ID 확인</div>
+                <div class="check-item"><div class="check-box"></div>다른 팀 통신 차단 확인</div>
             </div>
             
-            <i class="fas fa-chevron-right arrow"></i>
-            
-            <!-- Laptop 2 -->
-            <div class="role-box r2">
-                <div class="data-flow">Image Processing</div>
-                <div class="role-icon"><i class="fas fa-camera"></i></div>
-                <div class="role-title">Vision</div>
-                <div class="role-tasks">
-                    <div class="task-item"><i class="fas fa-play text-pink-500"></i> RealSense Node</div>
-                    <div class="task-item"><i class="fas fa-play text-pink-500"></i> Object Detection</div>
-                    <div class="mt-2 text-xs text-gray-400">Pub: /object_pose</div>
+            <div class="final-msg">
+                <i class="fas fa-thumbs-up final-icon"></i>
+                <div class="final-text">
+                    "설정이 완료되었습니다.<br>
+                    안전하고 즐거운 개발 되세요!"
                 </div>
-            </div>
-            
-            <i class="fas fa-chevron-right arrow"></i>
-            
-            <!-- Laptop 3 -->
-            <div class="role-box r3">
-                <div class="data-flow">Decision Making</div>
-                <div class="role-icon"><i class="fas fa-brain"></i></div>
-                <div class="role-title">Control</div>
-                <div class="role-tasks">
-                    <div class="task-item"><i class="fas fa-play text-green-500"></i> Sort Logic</div>
-                    <div class="task-item"><i class="fas fa-play text-green-500"></i> Path Planning</div>
-                    <div class="mt-2 text-xs text-gray-400">Pub: /dsr01/movel</div>
-                </div>
-            </div>
-            
-            <i class="fas fa-chevron-right arrow"></i>
-            
-            <!-- Laptop 4 -->
-            <div class="role-box r4">
-                <div class="data-flow">Visualization</div>
-                <div class="role-icon"><i class="fas fa-tv"></i></div>
-                <div class="role-title">Monitor</div>
-                <div class="role-tasks">
-                    <div class="task-item"><i class="fas fa-play text-yellow-500"></i> RViz2</div>
-                    <div class="task-item"><i class="fas fa-play text-yellow-500"></i> rqt_graph</div>
-                    <div class="mt-2 text-xs text-gray-400">Sub: All Topics</div>
-                </div>
+                <div class="final-sub">ROS 2 Humble Network Guide</div>
             </div>
         </div>
     </div>

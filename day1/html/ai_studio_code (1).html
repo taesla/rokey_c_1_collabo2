@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Slide 2: Setup</title>
+    <title>Slide 2: Why</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
@@ -12,68 +12,58 @@
         .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
         .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; }
         
-        .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; height: 100%; }
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; height: 100%; }
         
-        /* PC Setup */
-        .pc-card { background: #1e293b; border-radius: 16px; padding: 25px; color: white; display: flex; flex-direction: column; }
-        .term-header { display: flex; gap: 8px; margin-bottom: 15px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
-        .term-body { font-family: 'Consolas', monospace; font-size: 16px; color: #e2e8f0; line-height: 1.8; }
-        .cmd-box { background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3b82f6; }
-        .comment { color: #94a3b8; }
+        .bad-case { background: #fff5f5; border: 2px solid #fca5a5; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; }
+        .good-case { background: #f0fdf4; border: 2px solid #86efac; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; }
         
-        /* Robot Setup */
-        .robot-card { background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; align-items: center; }
-        .tp-mockup { width: 300px; height: 200px; background: #334155; border-radius: 10px; padding: 10px; position: relative; box-shadow: 0 10px 15px -5px rgba(0,0,0,0.2); }
-        .tp-screen { width: 100%; height: 100%; background: #0f172a; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .input-box { background: white; color: black; padding: 5px 20px; font-weight: bold; font-size: 24px; border-radius: 4px; margin-top: 10px; border: 2px solid #3b82f6; }
+        .case-title { font-size: 24px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; }
+        .bad-title { color: #b91c1c; }
+        .good-title { color: #15803d; }
+        
+        .code-box { background: #1e293b; color: white; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; margin-bottom: 20px; }
+        .comment-bad { color: #fca5a5; }
+        .comment-good { color: #86efac; }
+        
+        .list-item { display: flex; align-items: start; margin-bottom: 12px; font-size: 16px; font-weight: 500; }
+        .icon { margin-right: 12px; margin-top: 4px; font-size: 18px; }
     </style>
 </head>
 <body>
     <div class="slide">
         <div class="header">
-            <h1><i class="fas fa-sliders-h mr-3"></i>설정 방법 (Setup Guide)</h1>
-            <span class="text-xl text-gray-500">PC & Robot</span>
+            <h1><i class="fas fa-question-circle mr-3"></i>왜 개별 설정이 필요한가?</h1>
+            <span class="text-xl text-gray-500">Problem & Solution</span>
         </div>
         
-        <div class="setup-grid">
-            <!-- PC Setup -->
-            <div class="pc-card">
-                <div class="term-header">
-                    <div class="dot bg-red-500"></div><div class="dot bg-yellow-500"></div><div class="dot bg-green-500"></div>
-                    <span class="ml-2 text-sm text-gray-400">Terminal (All Laptops)</span>
+        <div class="compare-grid">
+            <!-- Bad Case -->
+            <div class="bad-case">
+                <div class="case-title bad-title"><i class="fas fa-times-circle mr-3"></i>잘못된 방법 (충돌)</div>
+                <div class="code-box">
+                    export ROS_DOMAIN_ID=60 <span class="comment-bad"># Team 1</span><br>
+                    export ROS_DOMAIN_ID=60 <span class="comment-bad"># Team 2 (Conflict!)</span><br>
+                    export ROS_DOMAIN_ID=60 <span class="comment-bad"># Team 3 (Conflict!)</span>
                 </div>
-                <div class="term-body">
-                    <div class="text-blue-400 font-bold mb-2">Option 1: 자동 스크립트 (권장)</div>
-                    <div class="cmd-box">
-                        $ cd ~<br>
-                        $ ./setup_ros_domain_id.sh
-                    </div>
-                    
-                    <div class="text-green-400 font-bold mb-2">Option 2: 수동 설정</div>
-                    <div class="cmd-box">
-                        <span class="comment"># .bashrc 파일 수정</span><br>
-                        $ echo 'export ROS_DOMAIN_ID=60' >> ~/.bashrc<br>
-                        $ source ~/.bashrc
-                    </div>
+                <div>
+                    <div class="list-item text-red-800"><i class="fas fa-exclamation-triangle icon"></i>다른 팀 명령이 내 로봇 제어</div>
+                    <div class="list-item text-red-800"><i class="fas fa-exclamation-triangle icon"></i>토픽 데이터 혼선 및 오염</div>
+                    <div class="list-item text-red-800"><i class="fas fa-exclamation-triangle icon"></i>디버깅 불가능 수준의 혼란</div>
                 </div>
             </div>
 
-            <!-- Robot Setup -->
-            <div class="robot-card">
-                <h2 class="text-2xl font-bold text-gray-700 mb-6"><i class="fas fa-robot mr-2"></i>Teach Pendant 설정</h2>
-                
-                <div class="tp-mockup">
-                    <div class="tp-screen">
-                        <div class="text-sm text-gray-400 mb-2">SETTINGS > NETWORK > ROS2</div>
-                        <div class="text-lg">DOMAIN ID</div>
-                        <div class="input-box">60</div>
-                        <div class="mt-4 text-xs text-yellow-400"><i class="fas fa-exclamation-triangle mr-1"></i>Reboot Required</div>
-                    </div>
+            <!-- Good Case -->
+            <div class="good-case">
+                <div class="case-title good-title"><i class="fas fa-check-circle mr-3"></i>올바른 방법 (격리)</div>
+                <div class="code-box">
+                    export ROS_DOMAIN_ID=60 <span class="comment-good"># Team 1</span><br>
+                    export ROS_DOMAIN_ID=61 <span class="comment-good"># Team 2 (Isolated)</span><br>
+                    export ROS_DOMAIN_ID=62 <span class="comment-good"># Team 3 (Isolated)</span>
                 </div>
-                
-                <div class="mt-8 bg-blue-50 text-blue-800 p-4 rounded-lg text-sm font-medium w-full text-center">
-                    ⚠️ 노트북과 로봇의 ID가 반드시 <strong>일치</strong>해야 합니다!
+                <div>
+                    <div class="list-item text-green-800"><i class="fas fa-shield-alt icon"></i>팀별 독립적인 작동 보장</div>
+                    <div class="list-item text-green-800"><i class="fas fa-eye-slash icon"></i>타 팀 데이터 보이지 않음</div>
+                    <div class="list-item text-green-800"><i class="fas fa-check icon"></i>안전하고 쾌적한 개발 환경</div>
                 </div>
             </div>
         </div>
