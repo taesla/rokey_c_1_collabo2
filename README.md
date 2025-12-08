@@ -21,10 +21,10 @@
 
 | 문서 | 설명 |
 |------|------|
-| 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 11장 인터랙티브 아키텍처 슬라이드 |
+| 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 8장 Hand-Eye Calibration 슬라이드 |
 | 🔧 [Gripper Test Guide](1_gripper_setup/README_GRIPPER_TESTS.md) | 그리퍼 테스트 상세 가이드 |
-| 📋 [ROS_DOMAIN_ID Guide](1_gripper_setup/ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 |
-| 🌐 [Domain ID Scenarios](1_gripper_setup/ROS_DOMAIN_ID_SCENARIOS.md) | 분산 시스템 활용 시나리오 |
+| 📋 [ROS_DOMAIN_ID Guide](1_gripper_setup/ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 (팀별 개별 ID) |
+| 📷 [Calibration Guide](2_calibration/README_CALIBRATION.md) | Hand-Eye Calibration 전체 가이드 |
 
 ---
 
