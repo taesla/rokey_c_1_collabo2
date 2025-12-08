@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Slide 6: Capabilities</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .slide { width: 1280px; height: 720px; background: white; padding: 40px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
+        .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; }
+        
+        .cards-container { display: flex; gap: 30px; height: 100%; justify-content: center; align-items: stretch; }
+        .tech-card { flex: 1; background: #f8fafc; border-radius: 16px; padding: 25px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.2s; }
+        .tech-card:hover { transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .tc-icon { font-size: 50px; margin-bottom: 20px; text-align: center; }
+        .tc-title { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 15px; color: #334155; }
+        .tc-desc { font-size: 15px; color: #64748b; line-height: 1.6; text-align: center; margin-bottom: 20px; }
+        
+        .code-snippet { background: #1e293b; color: #a5f3fc; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; text-align: left; }
+        
+        .c1 .tc-icon { color: #3b82f6; } .c1 { border-top: 6px solid #3b82f6; }
+        .c2 .tc-icon { color: #8b5cf6; } .c2 { border-top: 6px solid #8b5cf6; }
+        .c3 .tc-icon { color: #f59e0b; } .c3 { border-top: 6px solid #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <div class="header">
+            <h1><i class="fas fa-code-branch mr-3"></i>ROS2 분산 통신 기술</h1>
+            <span class="text-xl text-gray-500">DDS Discovery</span>
+        </div>
+        
+        <div class="cards-container">
+            <div class="tech-card c1">
+                <i class="fas fa-share-alt tc-icon"></i>
+                <div class="tc-title">1. 토픽 공유 (Topic)</div>
+                <div class="tc-desc">
+                    노트북 A가 발행한 메시지를<br>나머지 노트북이 실시간 구독합니다.<br>
+                    설정 없이 자동 발견(Discovery)됩니다.
+                </div>
+                <div class="code-snippet">
+                    # Laptop A<br>
+                    pub('/hello', "Hi")<br><br>
+                    # Laptop B, C, D<br>
+                    sub('/hello') -> "Hi"
+                </div>
+            </div>
+            
+            <div class="tech-card c2">
+                <i class="fas fa-concierge-bell tc-icon"></i>
+                <div class="tc-title">2. 서비스 호출 (Service)</div>
+                <div class="tech-desc tc-desc">
+                    노트북 A에 있는 로봇 제어 함수를<br>
+                    노트북 B에서 원격으로 호출하여<br>
+                    실행 결과를 받아볼 수 있습니다.
+                </div>
+                <div class="code-snippet">
+                    # Laptop A (Server)<br>
+                    Service('move_robot')<br><br>
+                    # Laptop B (Client)<br>
+                    Call('move_robot')
+                </div>
+            </div>
+            
+            <div class="tech-card c3">
+                <i class="fas fa-server tc-icon"></i>
+                <div class="tc-title">3. 분산 처리 (Distributed)</div>
+                <div class="tech-desc tc-desc">
+                    무거운 연산(영상처리, SLAM)을<br>
+                    여러 노트북에 나누어 처리하여<br>
+                    전체 시스템 성능을 높입니다.
+                </div>
+                <div class="code-snippet">
+                    Laptop 1: Robot Driver<br>
+                    Laptop 2: Camera Node<br>
+                    Laptop 3: Path Planning
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

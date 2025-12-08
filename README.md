@@ -11,61 +11,14 @@
 
 ---
 
-## 📊 인터랙티브 프레젠테이션
+## 📖 Documentation
 
-ROS_DOMAIN_ID 설정 및 활용 시나리오를 시각적으로 이해하기 위한 슬라이드를 제공합니다.
-
-<details>
-<summary><b>🎬 슬라이드 보기 (클릭하여 펼치기)</b></summary>
-
-### Slide 1: ROS_DOMAIN_ID Overview
-네트워크 격리 전략의 개념과 필요성
-- [📊 슬라이드 보기](./html/ai_studio_code.html)
-
-### Slide 2: Setup Process
-ROS_DOMAIN_ID 설정 방법
-- [📊 슬라이드 보기](./html/ai_studio_code%20(1).html)
-
-### Slide 3: Verification
-설정 확인 및 검증
-- [📊 슬라이드 보기](./html/ai_studio_code%20(2).html)
-
-### Slide 4: Management
-DOMAIN_ID 관리 전략
-- [📊 슬라이드 보기](./html/ai_studio_code%20(3).html)
-
-### Slide 5: ROS2 Concept
-ROS2 분산 시스템 개념
-- [📊 슬라이드 보기](./html/ai_studio_code%20(4).html)
-
-### Slide 6: Team Capabilities
-팀 협업 기능
-- [📊 슬라이드 보기](./html/ai_studio_code%20(5).html)
-
-### Slide 7: Pick & Place Workflow
-픽앤플레이스 작업 흐름
-- [📊 슬라이드 보기](./html/ai_studio_code%20(7).html)
-
-### Slide 8: Data Collection
-데이터 수집 및 공유
-- [📊 슬라이드 보기](./html/ai_studio_code%20(8).html)
-
-### Slide 9: Network Isolation
-네트워크 격리 아키텍처
-- [📊 슬라이드 보기](./html/ai_studio_code%20(9).html)
-
-### Slide 10: Summary
-요약 및 다음 단계
-- [📊 슬라이드 보기](./html/ai_studio_code%20(10).html)
-
-> **💡 Tip**: GitHub에서 슬라이드를 보려면 저장소를 클론한 후 로컬에서 HTML 파일을 여세요.
-> ```bash
-> git clone https://github.com/taesla/rokey_c_1_collabo2.git
-> cd rokey_c_1_collabo2/html
-> firefox ai_studio_code.html
-> ```
-
-</details>
+| 문서 | 설명 |
+|------|------|
+| 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 11장 인터랙티브 아키텍처 슬라이드 |
+| 🔧 [Gripper Test Guide](README_GRIPPER_TESTS.md) | 그리퍼 테스트 상세 가이드 |
+| 📋 [ROS_DOMAIN_ID Guide](ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 |
+| 🌐 [Domain ID Scenarios](ROS_DOMAIN_ID_SCENARIOS.md) | 분산 시스템 활용 시나리오 |
 
 ---
 

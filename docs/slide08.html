@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Slide 7: Pick & Place</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .slide { width: 1280px; height: 720px; background: white; padding: 40px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
+        .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; }
+        
+        .process-flow { display: flex; align-items: center; justify-content: space-between; height: 100%; margin-top: 20px; }
+        
+        .role-box { width: 22%; height: 320px; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; align-items: center; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 6px solid; background: #f8fafc; }
+        .role-icon { width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .role-title { font-size: 20px; font-weight: 800; margin-bottom: 10px; color: #1e293b; }
+        .role-tasks { width: 100%; font-size: 14px; color: #475569; background: white; padding: 15px; border-radius: 8px; flex: 1; }
+        .task-item { display: flex; gap: 8px; margin-bottom: 8px; }
+        
+        .arrow { font-size: 30px; color: #cbd5e1; }
+        
+        .r1 { border-color: #3b82f6; } .r1 .role-icon { color: #3b82f6; }
+        .r2 { border-color: #ec4899; } .r2 .role-icon { color: #ec4899; }
+        .r3 { border-color: #10b981; } .r3 .role-icon { color: #10b981; }
+        .r4 { border-color: #f59e0b; } .r4 .role-icon { color: #f59e0b; }
+        
+        .data-flow { position: absolute; top: -15px; background: #e0f2fe; padding: 2px 10px; border-radius: 20px; font-size: 11px; color: #0369a1; font-weight: 700; width: 100%; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <div class="header">
+            <h1><i class="fas fa-people-carry mr-3"></i>실전 예제 1: 협업 Pick & Place</h1>
+            <span class="text-xl text-gray-500">Collaborative Application</span>
+        </div>
+        
+        <div class="bg-blue-50 p-4 rounded-lg mb-6 text-center text-blue-900 font-bold border border-blue-100">
+            "각자의 노트북이 하나의 거대한 로봇 시스템의 부품이 됩니다."
+        </div>
+
+        <div class="process-flow">
+            <!-- Laptop 1 -->
+            <div class="role-box r1">
+                <div class="data-flow">Hardware Interface</div>
+                <div class="role-icon"><i class="fas fa-server"></i></div>
+                <div class="role-title">Driver</div>
+                <div class="role-tasks">
+                    <div class="task-item"><i class="fas fa-play text-blue-500"></i> dsr_bringup2</div>
+                    <div class="task-item"><i class="fas fa-play text-blue-500"></i> Robot Connection</div>
+                    <div class="mt-2 text-xs text-gray-400">Main Host</div>
+                </div>
+            </div>
+            
+            <i class="fas fa-chevron-right arrow"></i>
+            
+            <!-- Laptop 2 -->
+            <div class="role-box r2">
+                <div class="data-flow">Image Processing</div>
+                <div class="role-icon"><i class="fas fa-camera"></i></div>
+                <div class="role-title">Vision</div>
+                <div class="role-tasks">
+                    <div class="task-item"><i class="fas fa-play text-pink-500"></i> RealSense Node</div>
+                    <div class="task-item"><i class="fas fa-play text-pink-500"></i> Object Detection</div>
+                    <div class="mt-2 text-xs text-gray-400">Pub: /object_pose</div>
+                </div>
+            </div>
+            
+            <i class="fas fa-chevron-right arrow"></i>
+            
+            <!-- Laptop 3 -->
+            <div class="role-box r3">
+                <div class="data-flow">Decision Making</div>
+                <div class="role-icon"><i class="fas fa-brain"></i></div>
+                <div class="role-title">Control</div>
+                <div class="role-tasks">
+                    <div class="task-item"><i class="fas fa-play text-green-500"></i> Sort Logic</div>
+                    <div class="task-item"><i class="fas fa-play text-green-500"></i> Path Planning</div>
+                    <div class="mt-2 text-xs text-gray-400">Pub: /dsr01/movel</div>
+                </div>
+            </div>
+            
+            <i class="fas fa-chevron-right arrow"></i>
+            
+            <!-- Laptop 4 -->
+            <div class="role-box r4">
+                <div class="data-flow">Visualization</div>
+                <div class="role-icon"><i class="fas fa-tv"></i></div>
+                <div class="role-title">Monitor</div>
+                <div class="role-tasks">
+                    <div class="task-item"><i class="fas fa-play text-yellow-500"></i> RViz2</div>
+                    <div class="task-item"><i class="fas fa-play text-yellow-500"></i> rqt_graph</div>
+                    <div class="mt-2 text-xs text-gray-400">Sub: All Topics</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
