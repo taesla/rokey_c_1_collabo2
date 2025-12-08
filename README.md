@@ -1,13 +1,19 @@
-# Day 1: OnRobot RG2 Gripper Setup & Testing
+# Day 1: Robot System Setup & Calibration
 
 ## 📅 작업 날짜
 2025년 12월 8일
 
 ## 🎯 목표
-- OnRobot RG2 그리퍼 네트워크 연결 및 제어
-- Modbus TCP 통신 구현
-- 그리퍼 기본/고급 기능 테스트
-- ROS2 DOMAIN_ID 설정 (조별 네트워크 격리)
+- **1부: 그리퍼 시스템 구축**
+  - OnRobot RG2 그리퍼 네트워크 연결 및 제어
+  - Modbus TCP 통신 구현
+  - 그리퍼 기본/고급 기능 테스트
+  - ROS2 DOMAIN_ID 설정 (조별 네트워크 격리)
+
+- **2부: 캘리브레이션 (진행 예정)**
+  - RealSense D435i 카메라 설정
+  - Hand-Eye Calibration
+  - Eye-to-Hand Calibration
 
 ---
 
@@ -16,9 +22,9 @@
 | 문서 | 설명 |
 |------|------|
 | 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 11장 인터랙티브 아키텍처 슬라이드 |
-| 🔧 [Gripper Test Guide](README_GRIPPER_TESTS.md) | 그리퍼 테스트 상세 가이드 |
-| 📋 [ROS_DOMAIN_ID Guide](ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 |
-| 🌐 [Domain ID Scenarios](ROS_DOMAIN_ID_SCENARIOS.md) | 분산 시스템 활용 시나리오 |
+| 🔧 [Gripper Test Guide](1_gripper_setup/README_GRIPPER_TESTS.md) | 그리퍼 테스트 상세 가이드 |
+| 📋 [ROS_DOMAIN_ID Guide](1_gripper_setup/ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 |
+| 🌐 [Domain ID Scenarios](1_gripper_setup/ROS_DOMAIN_ID_SCENARIOS.md) | 분산 시스템 활용 시나리오 |
 
 ---
 
@@ -26,22 +32,34 @@
 
 ```
 day1_gripper_setup/
-├── README.md                      # 이 파일
-├── onrobot.py                     # OnRobot RG2 제어 클래스
-├── test_gripper_connection.py    # 연결 테스트
-├── test_gripper_basic.py          # 기본 동작 테스트
-├── test_gripper_advanced.py       # 고급 기능 테스트
-├── README_GRIPPER_TESTS.md        # 테스트 가이드
-├── setup_ros_domain_id.sh         # ROS_DOMAIN_ID 설정 스크립트
-├── ROS_DOMAIN_ID_GUIDE.md         # DOMAIN_ID 설정 가이드
-└── ROS_DOMAIN_ID_SCENARIOS.md     # 분산 시스템 시나리오
+├── README.md                          # 메인 문서 (이 파일)
+├── docs/                              # GitHub Pages 슬라이드
+│   ├── index.html                     # 슬라이드 뷰어
+│   └── slide01~11.html                # 아키텍처 슬라이드
+│
+├── 1_gripper_setup/                   # 1부: 그리퍼 시스템
+│   ├── onrobot.py                     # OnRobot RG2 제어 클래스
+│   ├── test_gripper_connection.py    # 연결 테스트
+│   ├── test_gripper_basic.py          # 기본 동작 테스트
+│   ├── test_gripper_advanced.py       # 고급 기능 테스트
+│   ├── README_GRIPPER_TESTS.md        # 테스트 가이드
+│   ├── setup_ros_domain_id.sh         # ROS_DOMAIN_ID 설정 스크립트
+│   ├── ROS_DOMAIN_ID_GUIDE.md         # DOMAIN_ID 설정 가이드
+│   └── ROS_DOMAIN_ID_SCENARIOS.md     # 분산 시스템 시나리오
+│
+└── 2_calibration/                     # 2부: 캘리브레이션 (TBD)
+    └── (진행 예정)
 ```
 
 ---
 
-## 🔧 환경 설정
+---
 
-### 1. 필수 패키지 설치
+## 📚 Part 1: 그리퍼 시스템 구축
+
+### 🔧 환경 설정
+
+#### 1. 필수 패키지 설치
 
 ```bash
 # pymodbus (그리퍼 통신용)
@@ -51,7 +69,7 @@ pip3 install pymodbus==2.5.3
 pip3 install opencv-python matplotlib
 ```
 
-### 2. 네트워크 설정
+#### 2. 네트워크 설정
 
 ```bash
 # 그리퍼 연결 (USB-이더넷)
@@ -69,10 +87,11 @@ sudo nmcli connection up "Wired connection 2"
 ping 192.168.1.1
 ```
 
-### 3. ROS_DOMAIN_ID 설정 (조별 격리)
+#### 3. ROS_DOMAIN_ID 설정 (조별 격리)
 
 ```bash
 # 자동 설정
+cd 1_gripper_setup
 ./setup_ros_domain_id.sh
 
 # 수동 설정
@@ -80,13 +99,12 @@ echo 'export ROS_DOMAIN_ID=60' >> ~/.bashrc
 source ~/.bashrc
 ```
 
----
+### 🚀 사용법
 
-## 🚀 사용법
-
-### 1. 그리퍼 연결 확인
+#### 1. 그리퍼 연결 확인
 
 ```bash
+cd 1_gripper_setup
 python3 test_gripper_connection.py
 ```
 
@@ -98,9 +116,10 @@ python3 test_gripper_connection.py
 현재 그리퍼 너비: 101.6 mm
 ```
 
-### 2. 기본 동작 테스트
+#### 2. 기본 동작 테스트
 
 ```bash
+cd 1_gripper_setup
 python3 test_gripper_basic.py
 ```
 
@@ -109,9 +128,10 @@ python3 test_gripper_basic.py
 - 그리퍼 닫기 (0mm)
 - 특정 위치로 이동 (50mm)
 
-### 3. 고급 기능 테스트
+#### 3. 고급 기능 테스트
 
 ```bash
+cd 1_gripper_setup
 python3 test_gripper_advanced.py
 ```
 
@@ -121,9 +141,7 @@ python3 test_gripper_advanced.py
 - 정밀 위치 제어 (80, 60, 40, 20mm)
 - 상태 플래그 분석
 
----
-
-## 📚 주요 클래스 및 함수
+### 📚 주요 클래스 및 함수
 
 ### `onrobot.RG` 클래스
 
@@ -180,16 +198,14 @@ PC (노트북)                    OnRobot RG2 그리퍼
 - 힘 제어 (0~400N)
 - 상태 모니터링 (busy, grip detected 등)
 
-### 3. ROS2 네트워크
+#### 3. ROS2 네트워크
 - DOMAIN_ID를 통한 조별 격리
 - 분산 시스템 아키텍처
 - 토픽 기반 통신
 
----
+### 🐛 문제 해결
 
-## 🐛 문제 해결
-
-### 1. 그리퍼 연결 실패
+#### 1. 그리퍼 연결 실패
 ```bash
 # 네트워크 확인
 ping 192.168.1.1
@@ -202,14 +218,14 @@ sudo nmcli connection down "Wired connection 2"
 sudo nmcli connection up "Wired connection 2"
 ```
 
-### 2. pymodbus ImportError
+#### 2. pymodbus ImportError
 ```bash
 # 올바른 버전 설치
 pip3 uninstall pymodbus
 pip3 install pymodbus==2.5.3
 ```
 
-### 3. ROS2 토픽 안 보임
+#### 3. ROS2 토픽 안 보임
 ```bash
 # DOMAIN_ID 확인
 echo $ROS_DOMAIN_ID
@@ -219,17 +235,15 @@ export ROS_DOMAIN_ID=60
 source ~/.bashrc
 ```
 
----
+### 📊 테스트 결과
 
-## 📊 테스트 결과
-
-### 성능 지표
+**성능 지표:**
 - 위치 정밀도: ±2mm
 - 힘 제어 범위: 0~400N (RG2)
 - 응답 시간: ~500ms
 - 통신 안정성: 100% (LAN)
 
-### 검증 완료 항목
+**검증 완료 항목:**
 - ✅ 네트워크 연결
 - ✅ 기본 열기/닫기
 - ✅ 정밀 위치 제어
@@ -239,7 +253,24 @@ source ~/.bashrc
 
 ---
 
-## 📝 다음 단계 (Day 2)
+## 📚 Part 2: 캘리브레이션 (진행 예정)
+
+### 🎯 목표
+- RealSense D435i 카메라 설정 및 테스트
+- Hand-Eye Calibration (손-눈 캘리브레이션)
+- Eye-to-Hand Calibration (외부 카메라 캘리브레이션)
+- ArUco 마커 기반 좌표계 변환
+
+### 📋 예정 작업
+1. RealSense SDK 설정
+2. 캘리브레이션 보드 준비
+3. 데이터 수집
+4. 변환 행렬 계산
+5. 정확도 검증
+
+---
+
+## 📝 다음 단계
 
 1. 로봇팔과 그리퍼 통합 제어
 2. RealSense 카메라 연동

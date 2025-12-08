@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Slide 1: Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
+        .slide { width: 1280px; height: 720px; background: white; padding: 40px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
+        .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; letter-spacing: -1px; }
+        
+        .hero-section { flex: 1; display: flex; align-items: center; justify-content: center; gap: 50px; }
+        
+        .id-badge {
+            width: 280px; height: 280px;
+            border-radius: 50%;
+            background: conic-gradient(from 45deg, #3b82f6, #06b6d4, #3b82f6);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .id-badge::before { content: ''; position: absolute; width: 260px; height: 260px; background: white; border-radius: 50%; }
+        .id-content { position: relative; z-index: 10; text-align: center; }
+        .id-num { font-size: 80px; font-weight: 900; color: #0f172a; line-height: 1; }
+        .id-label { font-size: 18px; color: #64748b; font-weight: 700; }
+        
+        .info-card { background: #f1f5f9; padding: 30px; border-radius: 20px; width: 500px; border-left: 8px solid #0f172a; }
+        .info-title { font-size: 24px; font-weight: 800; margin-bottom: 20px; color: #1e293b; }
+        .info-item { display: flex; align-items: center; margin-bottom: 15px; font-size: 18px; color: #334155; }
+        .info-icon { width: 40px; text-align: center; color: #3b82f6; margin-right: 15px; font-size: 24px; }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <div class="header">
+            <h1><i class="fas fa-network-wired mr-3"></i>ROS_DOMAIN_ID 설정 가이드</h1>
+            <span class="text-xl text-gray-500">Network Isolation Strategy</span>
+        </div>
+        
+        <div class="hero-section">
+            <div class="id-badge">
+                <div class="id-content">
+                    <div class="id-label">TARGET ID</div>
+                    <div class="id-num">60</div>
+                    <div class="id-label text-blue-500">GROUP 1</div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-title"><i class="fas fa-bullseye mr-2"></i>설정 목적 및 구성</div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-wifi"></i></div>
+                    <div><strong>통신 격리 (Isolation)</strong><br><span class="text-sm text-gray-500">동일 WiFi망 내 조별 혼선 방지</span></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-users"></i></div>
+                    <div><strong>우리 조 구성</strong><br><span class="text-sm text-gray-500">노트북 4대 + 로봇팔 1대</span></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-fingerprint"></i></div>
+                    <div><strong>할당 범위</strong><br><span class="text-sm text-gray-500">ID: 60 ~ 65번</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
