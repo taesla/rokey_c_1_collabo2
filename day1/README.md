@@ -37,17 +37,10 @@ day1/
 ├── Day1_Summary.md                    # 📚 강의자료 + 실습 통합 정리
 ├── 협동로봇2 강의자료.pdf               # 원본 강의자료
 │
-├── docs/                              # GitHub Pages 배포용
+├── docs/                              # 슬라이드 원본
 │   ├── index.html                     # 두 카테고리 슬라이드 뷰어
 │   ├── day1_slides/                   # 📚 Day 1 학습 정리 (9장)
-│   │   └── ai_studio_code*.html
-│   ├── ros_domain_slides/             # 🌐 ROS_DOMAIN_ID Guide (8장)
-│   │   └── ai_studio_code*.html
-│   └── 협동로봇2 강의자료.pdf           # PDF 강의자료
-│
-├── html/                              # 슬라이드 백업
-│   ├── index.html                     # 인터랙티브 슬라이드 뷰어
-│   └── ai_studio_code*.html           # 8장 슬라이드
+│   └── ros_domain_slides/             # 🌐 ROS_DOMAIN_ID Guide (8장)
 │
 ├── 1_gripper_setup/                   # 1부: 그리퍼 시스템
 │   ├── onrobot.py                     # OnRobot RG2 제어 클래스
@@ -64,8 +57,7 @@ day1/
     ├── realsense.py                   # ROS2 카메라 노드
     ├── onrobot.py                     # 그리퍼 제어
     ├── T_gripper2camera.npy           # 🎯 변환 행렬 결과물
-    ├── README_CALIBRATION.md          # 캘리브레이션 가이드
-    └── docs/                          # 캘리브레이션 슬라이드 백업
+    └── README_CALIBRATION.md          # 캘리브레이션 가이드
 ```
 
 ---
