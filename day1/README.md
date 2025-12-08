@@ -21,6 +21,7 @@
 
 | 문서 | 설명 |
 |------|------|
+| 📚 **[Day1 학습 정리](Day1_Summary.md)** | **강의자료 + 실습 통합 정리 (필독!)** |
 | 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 8장 Hand-Eye Calibration 슬라이드 |
 | 🔧 [Gripper Test Guide](1_gripper_setup/README_GRIPPER_TESTS.md) | 그리퍼 테스트 상세 가이드 |
 | 📋 [ROS_DOMAIN_ID Guide](1_gripper_setup/ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 (팀별 개별 ID) |
