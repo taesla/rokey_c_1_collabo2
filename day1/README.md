@@ -22,7 +22,7 @@
 | 문서 | 설명 |
 |------|------|
 | 📚 **[Day1 학습 정리](Day1_Summary.md)** | **강의자료 + 실습 통합 정리 (필독!)** |
-| 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 8장 Hand-Eye Calibration 슬라이드 |
+| 🎯 [Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/) | 두 카테고리: Day 1 학습 정리 (9장) + ROS_DOMAIN_ID (8장) |
 | 🔧 [Gripper Test Guide](1_gripper_setup/README_GRIPPER_TESTS.md) | 그리퍼 테스트 상세 가이드 |
 | 📋 [ROS_DOMAIN_ID Guide](1_gripper_setup/ROS_DOMAIN_ID_GUIDE.md) | ROS2 네트워크 격리 설정 (팀별 개별 ID) |
 | 📷 [Calibration Guide](2_calibration/README_CALIBRATION.md) | Hand-Eye Calibration 전체 가이드 |
@@ -38,11 +38,14 @@ day1/
 ├── 협동로봇2 강의자료.pdf               # 원본 강의자료
 │
 ├── docs/                              # GitHub Pages 배포용
-│   ├── index.html                     # 인터랙티브 슬라이드 뷰어
-│   ├── ai_studio_code*.html           # 8장 Hand-Eye Calibration 슬라이드
+│   ├── index.html                     # 두 카테고리 슬라이드 뷰어
+│   ├── day1_slides/                   # 📚 Day 1 학습 정리 (9장)
+│   │   └── ai_studio_code*.html
+│   ├── ros_domain_slides/             # 🌐 ROS_DOMAIN_ID Guide (8장)
+│   │   └── ai_studio_code*.html
 │   └── 협동로봇2 강의자료.pdf           # PDF 강의자료
 │
-├── html/                              # 슬라이드 원본
+├── html/                              # 슬라이드 백업
 │   ├── index.html                     # 인터랙티브 슬라이드 뷰어
 │   └── ai_studio_code*.html           # 8장 슬라이드
 │
@@ -62,7 +65,7 @@ day1/
     ├── onrobot.py                     # 그리퍼 제어
     ├── T_gripper2camera.npy           # 🎯 변환 행렬 결과물
     ├── README_CALIBRATION.md          # 캘리브레이션 가이드
-    └── docs/                          # 캘리브레이션 슬라이드
+    └── docs/                          # 캘리브레이션 슬라이드 백업
 ```
 
 ---
