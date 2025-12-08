@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Slide 2: Why</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .slide { width: 1280px; height: 720px; background: white; padding: 40px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: end; }
+        .header h1 { font-size: 36px; font-weight: 900; color: #0f172a; }
+        
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; height: 100%; }
+        
+        .bad-case { background: #fff5f5; border: 2px solid #fca5a5; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; }
+        .good-case { background: #f0fdf4; border: 2px solid #86efac; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; }
+        
+        .case-title { font-size: 24px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; }
+        .bad-title { color: #b91c1c; }
+        .good-title { color: #15803d; }
+        
+        .code-box { background: #1e293b; color: white; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; margin-bottom: 20px; }
+        .comment-bad { color: #fca5a5; }
+        .comment-good { color: #86efac; }
+        
+        .list-item { display: flex; align-items: start; margin-bottom: 12px; font-size: 16px; font-weight: 500; }
+        .icon { margin-right: 12px; margin-top: 4px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <div class="header">
+            <h1><i class="fas fa-question-circle mr-3"></i>왜 개별 설정이 필요한가?</h1>
+            <span class="text-xl text-gray-500">Problem & Solution</span>
+        </div>
+        
+        <div class="compare-grid">
+            <!-- Bad Case -->
+            <div class="bad-case">
+                <div class="case-title bad-title"><i class="fas fa-times-circle mr-3"></i>잘못된 방법 (충돌)</div>
+                <div class="code-box">
+                    export ROS_DOMAIN_ID=60 <span class="comment-bad"># Team 1</span><br>
+                    export ROS_DOMAIN_ID=60 <span class="comment-bad"># Team 2 (Conflict!)</span><br>
+                    export ROS_DOMAIN_ID=60 <span class="comment-bad"># Team 3 (Conflict!)</span>
+                </div>
+                <div>
+                    <div class="list-item text-red-800"><i class="fas fa-exclamation-triangle icon"></i>다른 팀 명령이 내 로봇 제어</div>
+                    <div class="list-item text-red-800"><i class="fas fa-exclamation-triangle icon"></i>토픽 데이터 혼선 및 오염</div>
+                    <div class="list-item text-red-800"><i class="fas fa-exclamation-triangle icon"></i>디버깅 불가능 수준의 혼란</div>
+                </div>
+            </div>
+
+            <!-- Good Case -->
+            <div class="good-case">
+                <div class="case-title good-title"><i class="fas fa-check-circle mr-3"></i>올바른 방법 (격리)</div>
+                <div class="code-box">
+                    export ROS_DOMAIN_ID=60 <span class="comment-good"># Team 1</span><br>
+                    export ROS_DOMAIN_ID=61 <span class="comment-good"># Team 2 (Isolated)</span><br>
+                    export ROS_DOMAIN_ID=62 <span class="comment-good"># Team 3 (Isolated)</span>
+                </div>
+                <div>
+                    <div class="list-item text-green-800"><i class="fas fa-shield-alt icon"></i>팀별 독립적인 작동 보장</div>
+                    <div class="list-item text-green-800"><i class="fas fa-eye-slash icon"></i>타 팀 데이터 보이지 않음</div>
+                    <div class="list-item text-green-800"><i class="fas fa-check icon"></i>안전하고 쾌적한 개발 환경</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
