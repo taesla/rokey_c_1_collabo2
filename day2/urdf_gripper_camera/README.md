@@ -15,6 +15,163 @@ urdf_gripper_camera/
 └── README.md
 ```
 
+---
+
+## 🔄 워크스페이스 변경사항 (상세)
+
+이 섹션은 `~/ros2_ws/src/DoosanBootcampCol2/` 패키지에서 실제로 변경된 내용을 상세히 기록합니다.
+
+### 1. 변경된 파일 목록
+
+#### 📂 `dsr_description2/xacro/`
+
+| 파일 | 상태 | 설명 |
+|------|------|------|
+| `m0609.urdf.xacro` | **수정됨** | 그리퍼와 카메라 추가 |
+| `m0609.urdf.xacro.original` | **새로 생성** | 원본 백업 파일 |
+| `onrobot_rg2.urdf.xacro` | **새로 추가** | OnRobot RG2 그리퍼 URDF |
+
+#### 📂 `dsr_description2/meshes/visual/` (새로 추가된 파일 6개)
+
+| 파일 | 설명 |
+|------|------|
+| `body.stl` | 그리퍼 본체 |
+| `single_bracket.stl` | 로봇 플랜지 연결 브라켓 |
+| `moment_arm.stl` | 핑거 모멘트 암 |
+| `truss_arm.stl` | 핑거 트러스 암 |
+| `flex_finger.stl` | 유연 핑거 |
+| `finger_tip.stl` | 핑거 팁 (검은색) |
+
+#### 📂 `dsr_description2/meshes/collision/` (새로 추가된 파일 6개)
+
+위와 동일한 파일들 (충돌 감지용, 저해상도)
+
+---
+
+### 2. `m0609.urdf.xacro` 변경 내용 (Before → After)
+
+#### 🔴 원본 (Before)
+
+```xml
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="m0609" >
+  <!-- ... 기존 코드 ... -->
+  
+  <xacro:unless value="${gz}">
+    <xacro:include filename="$(find dsr_description2)/ros2_control/m0609.ros2_control.xacro" />
+    <xacro:m0609_ros2_control name="m0609"/>
+  </xacro:unless>
+  
+</robot>
+```
+
+#### 🟢 수정 후 (After)
+
+```xml
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="m0609" >
+  <!-- ... 기존 코드 동일 ... -->
+  
+  <xacro:unless value="${gz}">
+    <xacro:include filename="$(find dsr_description2)/ros2_control/m0609.ros2_control.xacro" />
+    <xacro:m0609_ros2_control name="m0609"/>
+  </xacro:unless>
+
+  <!-- ============================================== -->
+  <!-- OnRobot RG2 Gripper + Intel RealSense D435i   -->
+  <!-- ============================================== -->
+  
+  <!-- RG2 Gripper attached to link_6 (tool flange) -->
+  <xacro:include filename="$(find dsr_description2)/xacro/onrobot_rg2.urdf.xacro" />
+  <xacro:onrobot_rg2 prefix="gripper" parent="link_6">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:onrobot_rg2>
+  
+  <!-- Intel RealSense D435i Camera -->
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro" />
+  
+  <!-- Camera mounted on link_6 with calibrated transform -->
+  <xacro:sensor_d435i parent="link_6" name="camera" use_nominal_extrinsics="true">
+    <origin xyz="0.032630 0.060100 0.0" rpy="-1.5708 -1.5708 0"/>
+  </xacro:sensor_d435i>
+  
+</robot>
+```
+
+---
+
+### 3. `onrobot_rg2.urdf.xacro` 주요 내용
+
+- **출처**: https://github.com/ikalevatykh/onrobot_ros (ROS1 패키지)
+- **수정사항**:
+  1. 패키지 경로 변경: `package://onrobot_description` → `package://dsr_description2`
+  2. 조인트 타입 변경: `type="revolute"` → `type="fixed"` (joint_state 발행 불필요하도록)
+
+#### 그리퍼 링크 구조
+
+```
+link_6 (로봇 툴 플랜지)
+└── gripper_bracket (브라켓)
+    └── gripper_body (본체)
+        ├── gripper_moment_arm_left
+        │   └── gripper_truss_arm_left
+        │       └── gripper_finger_tip_left
+        ├── gripper_moment_arm_right
+        │   └── gripper_truss_arm_right
+        │       └── gripper_finger_tip_right
+        └── gripper_grasp_frame (TCP)
+```
+
+---
+
+### 4. 추가로 생성된 패키지 (사용하지 않음)
+
+작업 과정에서 `~/ros2_ws/src/gripper_camera_description/` 패키지가 생성되었으나, 최종적으로 **dsr_description2에 직접 통합**하는 방식을 선택했습니다.
+
+```
+gripper_camera_description/  (참고용, 실제로 사용하지 않음)
+├── CMakeLists.txt
+├── package.xml
+├── launch/view_robot.launch.py
+├── config/display.rviz, rg2_v1.yaml
+├── meshes/visual/, collision/
+└── urdf/onrobot_rg2.urdf.xacro, etc.
+```
+
+---
+
+### 5. 삭제된 패키지
+
+ROS1 전용 패키지로 ROS2에서 빌드 불가하여 삭제:
+
+```bash
+# 삭제된 패키지들
+~/ros2_ws/src/onrobot_ros/
+~/ros2_ws/src/onrobot_control/
+~/ros2_ws/src/onrobot_description/
+~/ros2_ws/src/onrobot_gazebo/
+```
+
+---
+
+### 6. 원본 복원 방법
+
+```bash
+# m0609.urdf.xacro 원본 복원
+cp ~/ros2_ws/src/DoosanBootcampCol2/dsr_description2/xacro/m0609.urdf.xacro.original \
+   ~/ros2_ws/src/DoosanBootcampCol2/dsr_description2/xacro/m0609.urdf.xacro
+
+# 추가된 파일 삭제 (선택사항)
+rm ~/ros2_ws/src/DoosanBootcampCol2/dsr_description2/xacro/onrobot_rg2.urdf.xacro
+rm ~/ros2_ws/src/DoosanBootcampCol2/dsr_description2/meshes/visual/{body,single_bracket,moment_arm,truss_arm,flex_finger,finger_tip}.stl
+rm ~/ros2_ws/src/DoosanBootcampCol2/dsr_description2/meshes/collision/{body,single_bracket,moment_arm,truss_arm,flex_finger,finger_tip}.stl
+
+# 다시 빌드
+cd ~/ros2_ws && colcon build --packages-select dsr_description2 --symlink-install
+```
+
+---
+
 ## 🔧 설치 방법
 
 ### 1. 파일 복사
