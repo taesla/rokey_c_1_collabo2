@@ -11,7 +11,8 @@
 | Day | 주제 | 상태 | 문서 |
 |:---:|------|:----:|------|
 | 1 | Gripper 설정 & Hand-Eye Calibration | ✅ 완료 | [📖 Day 1](day1/README.md) |
-| 2-5 | Object Detection (YOLO) | 🔜 예정 | - |
+| 2 | Object Detection 기초 (Orientation, CNN, YOLO) | ✅ 완료 | [📖 Day 2](day2/) |
+| 3-5 | Object Detection → Pick & Place | 🔜 예정 | - |
 | 6-7 | Voice Processing (STT, Wakeup Word) | 🔜 예정 | - |
 | 8+ | 시스템 통합 & LangChain | 🔜 예정 | - |
 
@@ -19,6 +20,7 @@
 
 - 🎨 **[Interactive Slides](https://taesla.github.io/rokey_c_1_collabo2/)** - Day 1 학습 슬라이드
 - 📚 **[Day 1 학습 정리](day1/Day1_Summary.md)** - 강의 + 실습 통합 문서
+- 📚 **[Day 1 세미나 가이드](day1/SEMINAR_GUIDE.md)** - 조원 대상 세미나 자료
 - 📋 **[강의자료 PDF](docs/협동로봇2%20강의자료.pdf)** - 원본 강의자료
 
 ## 🛠️ 사용 장비
@@ -42,11 +44,20 @@
 rokey_c_1_collabo2/
 ├── README.md                 # 이 파일
 ├── docs/                     # GitHub Pages (슬라이드, PDF)
-└── day1/                     # Day 1 학습 자료
-    ├── README.md             # Day 1 상세 문서
-    ├── Day1_Summary.md       # 학습 정리
-    ├── 1_gripper_setup/      # 그리퍼 코드
-    └── 2_calibration/        # 캘리브레이션 코드
+│
+├── day1/                     # Day 1: Gripper & Calibration
+│   ├── README.md             # Day 1 상세 문서
+│   ├── Day1_Summary.md       # 학습 정리
+│   ├── SEMINAR_GUIDE.md      # 세미나 가이드
+│   ├── 1_gripper_setup/      # 그리퍼 코드
+│   └── 2_calibration/        # 캘리브레이션 코드
+│
+└── day2/                     # Day 2: Object Detection 기초
+    ├── 01_Orientation(이론).ipynb
+    ├── 02_Orientation(실습1).ipynb
+    ├── 03_Orientation(실습2).ipynb
+    ├── 04_CNN기본.ipynb
+    └── yolo_train_predict/   # YOLO 학습/추론
 ```
 
 ## 📄 License
