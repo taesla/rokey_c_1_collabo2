@@ -31,6 +31,7 @@ setup(
             'face_detection_node = face_tracking_pkg.face_detection_node:main',
             'face_tracking_node = face_tracking_pkg.face_tracking_node:main',
             'robot_control_node = face_tracking_pkg.robot_control_node:main',
+            'camera_performance_test = face_tracking_pkg.camera_performance_test:main',
         ],
     },
 )

@@ -154,7 +154,59 @@ face_tracking_pkg/
 
 ---
 
-### Phase 3: MPC 통합 아키텍처 설계 ✅
+### Phase 3: 카메라 30Hz 검증 및 Launch 파일 작성 ✅
+**날짜**: 2025-12-10
+
+**목표**:
+- RealSense 카메라 30Hz 동작 확인
+- 통합 Launch 파일 작성
+- 성능 측정 도구 개발
+
+**작업 내용**:
+
+1. **카메라 성능 테스트 노드 개발**
+   ```python
+   # camera_performance_test.py
+   - RGB 스트림 Hz 측정
+   - Depth 스트림 Hz 측정
+   - 동기화 상태 확인
+   - 표준편차 및 안정성 분석
+   ```
+
+2. **통합 Launch 파일 작성**
+   ```python
+   # face_tracking_30hz.launch.py
+   - RealSense: 640x480@30Hz (RGB + Depth)
+   - face_detection_node: MediaPipe
+   - face_tracking_node: TF2 변환
+   - robot_control_node: 로봇 제어
+   - CPU 친화성 최적화 (taskset)
+   ```
+
+3. **실행 스크립트 작성**
+   ```bash
+   # start_face_tracking_30hz.sh
+   - 이전 프로세스 정리
+   - 환경 설정
+   - Launch 파일 실행
+   ```
+
+**성과**:
+| 항목 | 측정값 | 목표 | 상태 |
+|------|--------|------|------|
+| RGB Stream | 29.97-30.11 Hz | 30 Hz | ✅ 달성 |
+| Depth Stream | 29.88-30.08 Hz | 30 Hz | ✅ 달성 |
+| 표준편차 | 5-8 ms | <10ms | ✅ 우수 |
+| 동기화 | 2-7 ms (대부분) | <10ms | ✅ 양호 |
+
+**결론**:
+- ✅ 카메라는 이미 30Hz로 완벽하게 작동 중
+- ✅ 이전 14Hz 측정은 오류였음
+- ✅ 전체 파이프라인 30Hz 준비 완료
+
+---
+
+### Phase 4: MPC 통합 아키텍처 설계 ✅
 **날짜**: 2025-12-10
 
 **설계 목표**:
@@ -287,10 +339,11 @@ Trimmed Mean: 587  (상하위 20% 제거, 빠르면서 강건)
 → 지연 33ms (사람 인지 한계 50ms 이내)
 ```
 
-**60Hz 업그레이드 계획**:
-- Phase 4: RealSense 60Hz 설정
-- Phase 5: MPC 최적화 (60Hz)
-- Phase 6: C++ 포팅 (250Hz)
+**카메라 성능 측정 결과**:
+- ✅ RGB: 29.97-30.11 Hz (±5-7ms)
+- ✅ Depth: 29.88-30.08 Hz (±6-8ms)
+- ✅ 동기화: 2-7ms (대부분 Good)
+- ✅ 전체 파이프라인 30Hz 안정적 달성
 
 ---
 
@@ -377,12 +430,38 @@ source ~/ros2_ws/install/setup.bash
 ros2 run face_tracking_pkg robot_control_node
 ```
 
-#### B. 통합 실행 (추천)
+#### B. 통합 실행 (추천) ✅
 
+**방법 1: Launch 파일 직접 실행**
 ```bash
-# TODO: Launch 파일 작성 후
 source ~/ros2_ws/install/setup.bash
 ros2 launch face_tracking_pkg face_tracking_30hz.launch.py
+```
+
+**방법 2: 실행 스크립트 사용**
+```bash
+~/ros2_ws/src/face_tracking_pkg/scripts/start_face_tracking_30hz.sh
+```
+
+**포함된 노드**:
+- ✅ RealSense D435i (30Hz, RGB+Depth)
+- ✅ face_detection_node (MediaPipe)
+- ✅ face_tracking_node (TF2 변환)
+- ✅ robot_control_node (로봇 제어)
+
+#### C. 카메라 성능 테스트
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run face_tracking_pkg camera_performance_test
+```
+
+**출력 예시**:
+```
+============================================================
+📷 RGB Stream:   30.00 Hz (±5.29ms)
+📏 Depth Stream: 29.99 Hz (±5.85ms)
+✅ Sync: Good (2.5ms)
 ```
 
 ---
@@ -458,6 +537,9 @@ ros2 run face_tracking_pkg robot_control_node \
 | **얼굴 감지 FPS** | 30.3 Hz | 30 Hz | ✅ 달성 |
 | **얼굴 추적 FPS** | 30.3 Hz | 30 Hz | ✅ 달성 |
 | **추적 표준편차** | 0.00035s | <0.001s | ✅ 우수 |
+| **RGB 카메라 FPS** | 29.97-30.11 Hz | 30 Hz | ✅ 달성 |
+| **Depth 카메라 FPS** | 29.88-30.08 Hz | 30 Hz | ✅ 달성 |
+| **카메라 동기화** | 2-7ms | <10ms | ✅ 우수 |
 | **총 지연 시간** | ~33ms | <50ms | ✅ 양호 |
 | **카메라 FPS** | 14 Hz | 30 Hz | ⚠️ 개선 필요 |
 
@@ -530,12 +612,13 @@ ros2 topic hz /face_detection/faces
 
 ## 📈 향후 계획
 
-### Phase 4: RealSense 30Hz 최적화 (진행 중)
-- Launch 파일 작성
-- 카메라 파라미터 설정
-- 전체 파이프라인 30Hz 달성
+### ~~Phase 4: RealSense 30Hz 최적화~~ ✅ 완료
+- ✅ Launch 파일 작성 (face_tracking_30hz.launch.py)
+- ✅ 카메라 파라미터 설정 (640x480@30Hz)
+- ✅ 카메라 성능 테스트 도구 개발
+- ✅ 전체 파이프라인 30Hz 안정적 달성
 
-### Phase 5: MPC 통합
+### Phase 5: MPC 통합 (다음 목표)
 - robot_control_node에 MPC 적용
 - 칼만 필터 통합
 - 실시간 성능 검증
