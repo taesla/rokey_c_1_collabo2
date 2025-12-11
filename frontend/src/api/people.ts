@@ -8,6 +8,7 @@ export type Person = {
   department: string;
   rank?: string | null;
   created_at: string;
+  picture?: string | null;   
 };
 
 export async function fetchPeople(): Promise<Person[]> {

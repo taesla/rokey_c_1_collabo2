@@ -29,12 +29,14 @@ def list_people(db: Session = Depends(get_db)):
     return people
 
 # 🔹 군번으로 사람 조회 + Base64 변환
-
 @router.get("/search/{serial}", response_model=PeopleResponse)
 def search_person(serial: str, db: Session = Depends(get_db)):
     person = crud.get_person_by_serial(db, serial)
     if not person:
         raise HTTPException(404, "Person not found")
+    if person.picture:
+        person.picture = base64.b64encode(person.picture).decode("utf-8")
+
     return person
 
 # 🔹 JSON 방식 등록 (백워드 호환)
