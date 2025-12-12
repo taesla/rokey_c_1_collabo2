@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-Robot Control Node - J1(Base) + J5(Wrist2) 관절 제어로 얼굴 추적
+Robot Control Node - Cartesian Space Velocity Control for Head Tracking
 
-사주경계 모드: J1을 ±60도 범위에서 스캔
-추적 모드: 얼굴 위치 기반으로 J1(좌우) + J5(상하) 조절
+제어 방식: Velocity-based Cartesian Space Control
+- 비례 제어로 속도 벡터 생성
+- 안전 영역 검증
+- Dead zone 및 속도 제한 적용
 
 Subscribed Topics:
-  /face_tracking/marker_robot - 로봇 좌표계 얼굴 위치 (from face_tracking_node)
-
-조인트 명명 규칙 (Doosan API):
-- J1: Base (좌우) - index [0]
-- J5: Wrist2 (상하) - index [4]
+  /face_tracking/marker_ekf_filtered - EKF 필터링된 목표 위치 (Blue Cube)
 
 제어 파이프라인:
-  MediaPipe(Raw) → EKF(필터링) → P-Controller → Robot
+  MediaPipe(Raw) → Camera EKF → Robot EKF → Cartesian Controller → Robot
 """
 import sys
 import time
@@ -28,7 +26,7 @@ from face_tracking_pkg.face_tracking_ekf import FaceTrackingEKF
 
 
 class RobotControlNode(Node):
-    """로봇 제어 노드 - J1(좌우) + J5(상하)"""
+    """로봇 제어 노드 - Cartesian Space Velocity Control"""
     
     def __init__(self):
         super().__init__('robot_control_node')
@@ -36,13 +34,10 @@ class RobotControlNode(Node):
         # 파라미터 선언
         self.declare_parameter('robot_id', 'dsr01')
         self.declare_parameter('robot_model', 'm0609')
-        self.declare_parameter('velocity', 45)
-        self.declare_parameter('acceleration', 45)
-        self.declare_parameter('j1_gain', 0.12)
-        self.declare_parameter('j5_gain', 0.08)
-        self.declare_parameter('patrol_step', 10.0)
-        self.declare_parameter('detection_timeout', 2.0)
-        self.declare_parameter('max_fail_count', 3)
+        self.declare_parameter('velocity', 200.0)  # mm/s
+        self.declare_parameter('acceleration', 400.0)  # mm/s²
+        self.declare_parameter('k_p', 0.4)  # 비례 게인
+        self.declare_parameter('dead_zone', 10.0)  # mm
         self.declare_parameter('use_ekf', True)
         self.declare_parameter('ekf_process_noise', 0.1)
         self.declare_parameter('ekf_measurement_noise', 10.0)
@@ -50,13 +45,10 @@ class RobotControlNode(Node):
         # 파라미터 로드
         self.robot_id = self.get_parameter('robot_id').value
         self.robot_model = self.get_parameter('robot_model').value
-        self.velocity = self.get_parameter('velocity').value
-        self.acceleration = self.get_parameter('acceleration').value
-        self.j1_gain = self.get_parameter('j1_gain').value
-        self.j5_gain = self.get_parameter('j5_gain').value
-        self.patrol_step = self.get_parameter('patrol_step').value
-        self.detection_timeout = self.get_parameter('detection_timeout').value
-        self.max_fail_count = self.get_parameter('max_fail_count').value
+        self.v_max = self.get_parameter('velocity').value
+        self.a_max = self.get_parameter('acceleration').value
+        self.k_p = self.get_parameter('k_p').value
+        self.dead_zone = self.get_parameter('dead_zone').value
         self.use_ekf = self.get_parameter('use_ekf').value
         self.ekf_process_noise = self.get_parameter('ekf_process_noise').value
         self.ekf_measurement_noise = self.get_parameter('ekf_measurement_noise').value
@@ -65,26 +57,17 @@ class RobotControlNode(Node):
         self.start_joints = [3.06, 2.84, 92.13, 86.07, -1.43, 8.33]
         self.home_joints = [0.0, 0.0, 90.0, 0.0, 90.0, 0.0]
         
-        # J1, J5 범위
-        self.j1_min = self.start_joints[0] - 80.0
-        self.j1_max = self.start_joints[0] + 0.0
-        self.j5_min = self.start_joints[4] - 200.0
-        self.j5_max = self.start_joints[4] + 200.0
-        
-        # 안전 범위 (mm)
-        self.safe_r_min = 300.0
-        self.safe_r_max = 1200.0
-        self.safe_z_min = 100.0
+        # 안전 범위 (mm) - 보수적으로 설정
+        self.safe_r_min = 350.0  # 최소 반경 (너무 가까우면 충돌)
+        self.safe_r_max = 1100.0  # 최대 반경 (도달 범위)
+        self.safe_z_min = 150.0  # 최소 높이 (테이블 충돌 방지)
+        self.safety_margin = 50.0  # 안전 여유 (mm)
         
         # 상태
-        self.state = "IDLE"
-        self.target_pos = None
-        self.raw_pos = None  # EKF 비교용 Raw 위치
-        self.last_detection_time = time.time()
-        self.detection_fail_count = 0
-        self.reference_tcp = None
-        self.patrol_j1_current = self.start_joints[0]
-        self.patrol_direction = 1
+        self.state = "IDLE"  # IDLE, TRACKING
+        self.target_pos = None  # EKF 필터링된 목표 위치
+        self.last_move_time = time.time()
+        self.control_period = 0.033  # 30Hz
         
         # EKF 초기화 (30Hz)
         self.ekf = None
@@ -97,96 +80,75 @@ class RobotControlNode(Node):
         
         # 마커 구독 & 발행
         self.marker_sub = self.create_subscription(
-            Marker, '/face_tracking/marker_robot', self.marker_callback, 10)
+            Marker, '/face_tracking/marker_ekf_filtered', self.marker_callback, 10)
         self.ekf_marker_pub = self.create_publisher(
             Marker, '/face_tracking/marker_ekf_filtered', 10)
         self.ekf_text_pub = self.create_publisher(
             Marker, '/face_tracking/text_ekf_filtered', 10)
         
-        self.get_logger().info("=" * 50)
-        self.get_logger().info("🤖 Robot Control Node (J1+J5)")
+        self.get_logger().info("=" * 60)
+        self.get_logger().info("🤖 Robot Control Node - Cartesian Velocity Control")
         self.get_logger().info(f"  Robot: {self.robot_id} / {self.robot_model}")
-        self.get_logger().info(f"  Velocity: {self.velocity}")
+        self.get_logger().info(f"  Control: K_p={self.k_p}, v_max={self.v_max}mm/s")
+        self.get_logger().info(f"  Safety: Dead zone={self.dead_zone}mm, Margin={self.safety_margin}mm")
         if self.use_ekf:
             self.get_logger().info(f"  🔬 EKF: ON (Q={self.ekf_process_noise}, R={self.ekf_measurement_noise})")
         else:
-            self.get_logger().info("  ⚠️  EKF: OFF (Raw 신호 사용)")
-        self.get_logger().info("  키: 's'=시작, 'p'=사주경계 재개, 'h'=홈, 'q'=종료")
-        self.get_logger().info("=" * 50)
+            self.get_logger().info("  ⚠️  EKF: OFF")
+        self.get_logger().info("  키: 's'=시작 추적, 'h'=홈, 'q'=종료")
+        self.get_logger().info("=" * 60)
     
     def marker_callback(self, msg):
-        """마커 수신 콜백 - EKF 필터링 적용"""
-        # Raw 위치 (mm)
-        raw_x = msg.pose.position.x * 1000.0
-        raw_y = msg.pose.position.y * 1000.0
-        raw_z = msg.pose.position.z * 1000.0
+        """Blue 큐브 마커 수신 - EKF 필터링된 목표 위치"""
+        # 위치 (mm)
+        target_x = msg.pose.position.x * 1000.0
+        target_y = msg.pose.position.y * 1000.0
+        target_z = msg.pose.position.z * 1000.0
         
-        # 기본 필터링 (이상치 제거)
-        if not (200 < raw_x < 1000 and -400 < raw_y < 600 and 200 < raw_z < 800):
-            return
+        self.target_pos = [target_x, target_y, target_z]
         
-        # 급격한 변화 제거
-        if self.target_pos is not None:
-            dx = abs(raw_x - self.target_pos[0])
-            dy = abs(raw_y - self.target_pos[1])
-            dz = abs(raw_z - self.target_pos[2])
-            if dx > 200 or dy > 200 or dz > 200:
-                return
-        
-        raw_pos = [raw_x, raw_y, raw_z]
-        self.raw_pos = raw_pos  # 비교용 저장
-        
-        # EKF 필터링
-        if self.use_ekf and self.ekf is not None:
-            if not self.ekf.initialized:
-                # 첫 측정값으로 초기화
-                self.ekf.initialize(raw_pos)
-                self.target_pos = raw_pos
-                self.get_logger().info(f"🔬 EKF 초기화: [{raw_x:.1f}, {raw_y:.1f}, {raw_z:.1f}]")
-            else:
-                # 예측 단계
-                self.ekf.predict()
-                
-                # 업데이트 단계
-                self.ekf.update(raw_pos)
-                
-                # 필터링된 위치 사용
-                filtered_pos = self.ekf.get_position()
-                filtered_vel = self.ekf.get_velocity()
-                
-                self.target_pos = filtered_pos.tolist()
-                
-                # 주기적으로 Raw vs Filtered 비교 출력 (5초마다)
-                if not hasattr(self, '_last_log_time'):
-                    self._last_log_time = time.time()
-                
-                if time.time() - self._last_log_time > 5.0:
-                    raw_array = np.array(raw_pos)
-                    filtered_array = np.array(filtered_pos)
-                    noise = np.linalg.norm(raw_array - filtered_array)
-                    vel_norm = np.linalg.norm(filtered_vel)
-                    
-                    self.get_logger().info(
-                        f"📊 Raw: [{raw_x:.1f}, {raw_y:.1f}, {raw_z:.1f}] | "
-                        f"Filtered: [{filtered_pos[0]:.1f}, {filtered_pos[1]:.1f}, {filtered_pos[2]:.1f}] | "
-                        f"Noise: {noise:.1f}mm | Vel: {vel_norm:.1f}mm/s"
-                    )
-                    self._last_log_time = time.time()
-        else:
-            # EKF 미사용 시 Raw 그대로 사용
-            self.target_pos = raw_pos
-        
-        # EKF 필터링된 마커 퍼블리시 (파란색) - Raw 마커 있을 때만
-        if self.use_ekf and self.ekf is not None and self.ekf.initialized:
-            filtered_pos = self.ekf.get_position()
-            self.publish_ekf_marker(filtered_pos)
-        
-        self.last_detection_time = time.time()
-        self.detection_fail_count = 0
-        
-        if self.state == "PATROL":
+        # TRACKING 모드로 자동 전환
+        if self.state == "IDLE":
             self.get_logger().info("🎯 얼굴 감지! → 추적 모드")
             self.state = "TRACKING"
+    
+    def track_face(self, target_pos, current_tcp):
+        """
+        Cartesian Space Velocity Control
+        
+        Args:
+            target_pos: 목표 위치 [x, y, z] in mm
+            current_tcp: 현재 TCP 위치 [x, y, z, rx, ry, rz]
+        
+        Returns:
+            velocity: 속도 벡터 [vx, vy, vz] in mm/s, None if not safe
+        """
+        # 1. 안전 영역 체크
+        if not self.is_safe_position(target_pos):
+            self.get_logger().warn(f"⚠️ 안전 영역 밖: {target_pos}")
+            return None
+        
+        # 2. 현재 위치 추출 (x, y, z만)
+        current_pos = np.array(current_tcp[:3])
+        target_array = np.array(target_pos)
+        
+        # 3. 오차 계산
+        error = target_array - current_pos
+        distance = np.linalg.norm(error)
+        
+        # 4. Dead zone (너무 가까우면 무시)
+        if distance < self.dead_zone:
+            return None
+        
+        # 5. 속도 벡터 계산 (비례 제어)
+        velocity = error * self.k_p
+        
+        # 6. 속도 크기 제한
+        velocity_norm = np.linalg.norm(velocity)
+        if velocity_norm > self.v_max:
+            velocity = velocity * (self.v_max / velocity_norm)
+        
+        return velocity.tolist()
     
     def publish_ekf_marker(self, filtered_pos):
         """EKF 필터링된 마커 퍼블리시 (파란색 큐브)"""
@@ -227,10 +189,33 @@ class RobotControlNode(Node):
         self.ekf_text_pub.publish(text)
     
     def is_safe_position(self, pos):
-        """위치 안전 확인"""
+        """
+        위치 안전 확인 (보수적 설정)
+        
+        Args:
+            pos: [x, y, z] in mm
+        
+        Returns:
+            bool: True if safe
+        """
         x, y, z = pos[0], pos[1], pos[2]
+        
+        # 원점 거리 (반경)
         r = math.sqrt(x*x + y*y + z*z)
-        return self.safe_r_min <= r <= self.safe_r_max and z >= self.safe_z_min
+        
+        # 안전 반경 체크 (여유 포함)
+        if not (self.safe_r_min + self.safety_margin <= r <= self.safe_r_max - self.safety_margin):
+            return False
+        
+        # 높이 체크 (테이블 충돌 방지)
+        if z < self.safe_z_min + self.safety_margin:
+            return False
+        
+        # 전방 범위 체크 (로봇 앞쪽만)
+        if x < 200:  # 로봇 뒤쪽 제외
+            return False
+        
+        return True
     
     # ========================================================================
     # 🚧 LEGACY: J1+J5 Only Control (Phase 5-1)
@@ -270,13 +255,16 @@ def main(args=None):
     
     # DSR 함수 import
     try:
-        from DSR_ROBOT2 import movej, get_current_posx, get_current_posj, mwait
+        from DSR_ROBOT2 import movej, movel, get_current_posx, mwait
         print("✅ DSR 모듈 import 성공")
     except ImportError as e:
         print(f"❌ DSR 모듈 import 실패: {e}")
         sys.exit(1)
     
-    print("\n>>> 's' 입력 후 Enter: ")
+    print("\n>>> 키 입력:")
+    print("  's' = 시작 위치로 이동 후 추적 시작")
+    print("  'h' = 홈 위치로 이동")
+    print("  'q' = 종료\n")
     
     last_loop_time = time.time()
     
@@ -296,33 +284,16 @@ def main(args=None):
                 
                 if key == 's':
                     node.get_logger().info("📍 시작 위치로 이동 중...")
-                    node.state = "IDLE"
-                    movej(node.start_joints, vel=node.velocity, acc=node.acceleration)
+                    movej(node.start_joints, vel=60, acc=60)
                     mwait()
-                    node.reference_tcp = list(get_current_posx()[0])
-                    node.get_logger().info(f"✅ 시작 완료! TCP: ({node.reference_tcp[0]:.0f}, {node.reference_tcp[1]:.0f}, {node.reference_tcp[2]:.0f})mm")
-                    node.state = "PATROL"
-                    node.patrol_j1_current = node.start_joints[0]
-                    node.patrol_direction = 1
-                    node.last_detection_time = time.time()
-                
-                elif key == 'p':
-                    if node.state == "TRACKING":
-                        node.get_logger().info("🔄 사주경계 모드로 전환...")
-                        node.state = "IDLE"
-                        movej(node.start_joints, vel=node.velocity, acc=node.acceleration)
-                        mwait()
-                        node.state = "PATROL"
-                        node.patrol_j1_current = node.start_joints[0]
-                        node.patrol_direction = 1
-                        node.get_logger().info("✅ 사주경계 재개!")
-                    else:
-                        node.get_logger().info("⚠️ 추적 모드가 아닙니다.")
+                    current_tcp = list(get_current_posx()[0])
+                    node.get_logger().info(f"✅ 추적 준비 완료! TCP: ({current_tcp[0]:.0f}, {current_tcp[1]:.0f}, {current_tcp[2]:.0f})mm")
+                    node.state = "IDLE"  # 얼굴 감지 시 자동 TRACKING 전환
                 
                 elif key == 'h':
                     node.get_logger().info("🏠 홈 위치로 이동...")
                     node.state = "IDLE"
-                    movej(node.home_joints, vel=node.velocity, acc=node.acceleration)
+                    movej(node.home_joints, vel=60, acc=60)
                     mwait()
                     node.get_logger().info("✅ 홈 도착!")
                 
@@ -330,64 +301,43 @@ def main(args=None):
                     print("종료합니다...")
                     break
             
+            # 제어 루프 (30Hz)
             now = time.time()
-            
-            if node.state == "PATROL":
-                if now - last_loop_time < 0.8:
-                    continue
-            elif node.state == "TRACKING":
-                if now - last_loop_time < 0.15:
-                    continue
-            else:
+            if now - node.last_move_time < node.control_period:
                 continue
             
-            last_loop_time = now
+            node.last_move_time = now
             
-            # PATROL 모드
-            if node.state == "PATROL":
-                node.patrol_j1_current += node.patrol_step * node.patrol_direction
+            # TRACKING 모드: Cartesian 제어
+            if node.state == "TRACKING" and node.target_pos is not None:
+                # 현재 TCP 위치
+                current_tcp = list(get_current_posx()[0])
                 
-                if node.patrol_j1_current >= node.j1_max:
-                    node.patrol_j1_current = node.j1_max
-                    node.patrol_direction = -1
-                elif node.patrol_j1_current <= node.j1_min:
-                    node.patrol_j1_current = node.j1_min
-                    node.patrol_direction = 1
+                # Velocity 계산
+                velocity = node.track_face(node.target_pos, current_tcp)
                 
-                target_joints = list(node.start_joints)
-                target_joints[0] = node.patrol_j1_current
-                
-                node.get_logger().info(f"🔍 사주경계: J1={node.patrol_j1_current:.1f}°")
-                movej(target_joints, vel=node.velocity, acc=node.acceleration)
-            
-            # TRACKING 모드
-            elif node.state == "TRACKING":
-                # 디텍션 실패 시 경고만 출력하고 추적 모드 유지
-                if time.time() - node.last_detection_time > node.detection_timeout:
-                    if node.detection_fail_count == 0:
-                        node.get_logger().warn("⚠️ 얼굴 미감지 - 마지막 위치에서 대기 중... ('p'=사주경계 재개)")
-                    node.detection_fail_count += 1
-                    node.last_detection_time = time.time()
-                    continue
-                
-                if node.target_pos is not None:
-                    if not node.is_safe_position(node.target_pos):
-                        continue
+                if velocity is not None:
+                    # 목표 위치 계산 (현재 + 속도 * dt)
+                    target_tcp = current_tcp.copy()
+                    target_tcp[0] += velocity[0] * node.control_period
+                    target_tcp[1] += velocity[1] * node.control_period
+                    target_tcp[2] += velocity[2] * node.control_period
                     
-                    current_joints = list(get_current_posj()[0])
-                    current_pose = list(get_current_posx()[0])
+                    # 속도 노름 계산
+                    v_norm = np.linalg.norm(velocity)
                     
-                    delta_j1, delta_j5 = node.calculate_joint_deltas(current_pose, node.target_pos)
+                    # 로봇 이동 (movel - 직선 경로)
+                    movel(target_tcp, vel=v_norm, acc=node.a_max)
                     
-                    new_j1 = max(node.j1_min, min(node.j1_max, current_joints[0] + delta_j1))
-                    new_j5 = max(node.j5_min, min(node.j5_max, current_joints[4] + delta_j5))
+                    # 오차 계산 (로그용)
+                    error = np.array(node.target_pos) - np.array(current_tcp[:3])
+                    error_norm = np.linalg.norm(error)
                     
-                    target_joints = list(current_joints)
-                    target_joints[0] = new_j1
-                    target_joints[4] = new_j5
-                    
-                    node.get_logger().info(f"🎯 J1: {current_joints[0]:.1f}→{new_j1:.1f}° | J5: {current_joints[4]:.1f}→{new_j5:.1f}°")
-                    movej(target_joints, vel=node.velocity, acc=node.acceleration)
+                    node.get_logger().info(
+                        f"🎯 Error: {error_norm:.1f}mm | "
+                        f"Vel: {v_norm:.1f}mm/s | "
+                        f"TCP: [{current_tcp[0]:.0f}, {current_tcp[1]:.0f}, {current_tcp[2]:.0f}]"
+                    )
     
     except KeyboardInterrupt:
         print("\n키보드 인터럽트")
