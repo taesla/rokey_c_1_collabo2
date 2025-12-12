@@ -452,8 +452,8 @@ class FaceTrackingNode(Node):
         if depth < 100.0:  # 10cm 미만은 무시
             return
         
-        # 안전거리: 590mm (얼굴에서 59cm 떨어진 위치가 목표)
-        safety_distance = 590.0
+        # 안전거리: 650mm (얼굴에서 65cm 떨어진 위치가 목표)
+        safety_distance = 650.0
         distance = np.linalg.norm(filtered_camera_pos)
         direction = filtered_camera_pos / distance
         
@@ -461,6 +461,10 @@ class FaceTrackingNode(Node):
         target_camera_pos = filtered_camera_pos - direction * safety_distance
         
         robot_pos_xyz = self.camera_to_robot_tf2(target_camera_pos)
+        
+        # Z축 오프셋: +50mm 더 높게
+        if robot_pos_xyz is not None:
+            robot_pos_xyz[2] += 50.0
         if robot_pos_xyz is None:
             return
         

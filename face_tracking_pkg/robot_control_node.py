@@ -35,10 +35,10 @@ class RobotControlNode(Node):
         # 파라미터 선언
         self.declare_parameter('robot_id', 'dsr01')
         self.declare_parameter('robot_model', 'm0609')
-        self.declare_parameter('velocity', 60.0)  # mm/s (적당히 빠르게: 40→60)
-        self.declare_parameter('acceleration', 120.0)  # mm/s² (부드럽게: 100→120)
-        self.declare_parameter('k_p', 0.2)  # 비례 게인 (더 낮춤: 0.25→0.2)
-        self.declare_parameter('dead_zone', 50.0)  # mm (진동 방지: 30→50)
+        self.declare_parameter('velocity', 150.0)  # mm/s (빠른 반응: 60→150)
+        self.declare_parameter('acceleration', 300.0)  # mm/s² (빠른 가속: 120→300)
+        self.declare_parameter('k_p', 0.5)  # 비례 게인 (공격적: 0.2→0.5)
+        self.declare_parameter('dead_zone', 20.0)  # mm (민감하게: 50→20)
         self.declare_parameter('tcp_offset_z', 228.6)  # mm (RG2 그리퍼 TCP offset)
         self.declare_parameter('use_servol_rt', False)  # 실시간 제어 모드 (1kHz)
         self.declare_parameter('use_ekf', False)  # face_tracking_node에서 이미 필터링됨
@@ -72,10 +72,10 @@ class RobotControlNode(Node):
         self.state = "IDLE"  # IDLE, TRACKING
         self.target_pos = None  # EKF 필터링된 목표 위치
         self.last_move_time = time.time()
-        self.control_period = 0.1  # 10Hz (현실화: amovel 한계 고려)
+        self.control_period = 0.05  # 20Hz (빠른 반응: 10Hz→20Hz)
         
-        # Velocity Low-pass Filter (부드러운 모션)
-        self.velocity_filter_alpha = 0.3  # 0=이전값만, 1=새값만 (0.3=부드럽게)
+        # Velocity Low-pass Filter (반응속도 우선)
+        self.velocity_filter_alpha = 0.7  # 0=이전값만, 1=새값만 (0.7=빠른 반응)
         self.prev_velocity = np.array([0.0, 0.0, 0.0])
         
         # EKF 초기화 (10Hz)
@@ -602,10 +602,24 @@ def main(args=None):
                     target_gripper[0] += velocity[0] * node.control_period
                     target_gripper[1] += velocity[1] * node.control_period
                     target_gripper[2] += velocity[2] * node.control_period
-                    # 회전 완전 고정 (J6 최소 사용, J1~J5만 적극 사용)
-                    target_gripper[3] = current_tcp[3]
-                    target_gripper[4] = current_tcp[4]
-                    target_gripper[5] = current_tcp[5]
+                    
+                    # ========================================
+                    # J4 활성화: Rx (Roll) 조절
+                    # 얼굴이 좌우로 움직이면 손목도 따라 기울임
+                    # ========================================
+                    # 얼굴 Y 오차에 따른 Rx 조절 (J4 사용)
+                    face_y_error = node.target_pos[1] - current_tcp[1]  # 좌우 오차 (mm)
+                    rx_gain = 0.02  # deg/mm (조절 가능: 클수록 J4 많이 사용)
+                    rx_delta = face_y_error * rx_gain
+                    rx_delta = max(-15.0, min(15.0, rx_delta))  # ±15도 제한
+                    
+                    # ========================================
+                    # J6 완전 고정: Rz (Yaw) 변경 없음
+                    # ========================================
+                    
+                    target_gripper[3] = current_tcp[3] + rx_delta  # Rx 조절 (J4)
+                    target_gripper[4] = current_tcp[4]  # Ry 고정 (J5는 위치로 제어됨)
+                    target_gripper[5] = current_tcp[5]  # Rz 완전 고정 (J6)
                     
                     # 손목 중심 계산 (그리퍼 끝점에서 228.6mm 뒤로)
                     import math
