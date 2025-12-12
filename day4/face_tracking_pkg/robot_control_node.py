@@ -204,7 +204,7 @@ class RobotControlNode(Node):
         marker.scale.x = marker.scale.y = marker.scale.z = 0.12
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.5, 1.0, 0.5
         marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
+        marker.lifetime.nanosec = 200000000  # 0.2초
         self.ekf_marker_pub.publish(marker)
         
         # 텍스트 마커 (별도 토픽)
@@ -223,7 +223,7 @@ class RobotControlNode(Node):
         text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 0.5, 1.0, 1.0
         text.text = "Filtered"
         text.lifetime.sec = 0
-        text.lifetime.nanosec = 0
+        text.lifetime.nanosec = 200000000  # 0.2초
         self.ekf_text_pub.publish(text)
     
     def is_safe_position(self, pos):

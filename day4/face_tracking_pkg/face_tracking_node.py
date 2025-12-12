@@ -72,6 +72,9 @@ class FaceTrackingNode(Node):
         # EKF 초기화 (카메라 프레임 좌표 필터링용)
         self.camera_ekf = FaceTrackingEKF(dt=0.033, dim=3)
         
+        # 얼굴 감지 상태 플래그
+        self.face_detected = False
+        
         # 타이머: 트래킹 루프 (30Hz) - 병목 해결
         self.timer = self.create_timer(0.033, self.tracking_loop)
         
@@ -166,6 +169,27 @@ class FaceTrackingNode(Node):
             self.get_logger().warn(f"TF2 변환 실패: {e}")
             return None
     
+    def delete_all_markers(self):
+        """모든 마커와 텍스트를 삭제"""
+        marker_ids = [
+            (self.marker_pub, "face_camera"),
+            (self.text_pub, "face_camera_text"),
+            (self.marker_ekf_pub, "face_camera_ekf"),
+            (self.text_ekf_pub, "face_camera_ekf_text"),
+            (self.marker_robot_pub, "face_robot_target"),
+            (self.text_robot_pub, "face_robot_text"),
+            (self.line_pub, "face_line")
+        ]
+        
+        for pub, ns in marker_ids:
+            marker = Marker()
+            marker.header.frame_id = self.robot_frame
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = ns
+            marker.id = 0
+            marker.action = Marker.DELETE
+            pub.publish(marker)
+    
     def publish_camera_marker(self, camera_pos):
         """카메라 프레임 마커 (초록색 큐브) - base_link 프레임으로 변환하여 표시"""
         # TF 변환으로 base_link 좌표 얻기
@@ -187,7 +211,7 @@ class FaceTrackingNode(Node):
         marker.scale.x = marker.scale.y = marker.scale.z = 0.08
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.5
         marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
+        marker.lifetime.nanosec = 200000000  # 0.2초
         self.marker_pub.publish(marker)
         
         # 텍스트 마커 (별도 토픽) - base_link
@@ -206,7 +230,7 @@ class FaceTrackingNode(Node):
         text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 1.0, 0.0, 1.0
         text.text = "Raw"
         text.lifetime.sec = 0
-        text.lifetime.nanosec = 0
+        text.lifetime.nanosec = 200000000  # 0.2초
         self.text_pub.publish(text)
     
     def publish_camera_ekf_marker(self, filtered_pos):
@@ -230,7 +254,7 @@ class FaceTrackingNode(Node):
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.5
         marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
+        marker.lifetime.nanosec = 200000000  # 0.2초
         self.marker_ekf_pub.publish(marker)
         
         # 텍스트 마커 (별도 토픽) - base_link
@@ -249,7 +273,7 @@ class FaceTrackingNode(Node):
         text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 1.0, 1.0, 1.0
         text.text = "Filtered"
         text.lifetime.sec = 0
-        text.lifetime.nanosec = 0
+        text.lifetime.nanosec = 200000000  # 0.2초
         self.text_ekf_pub.publish(text)
     
     def publish_robot_marker(self, robot_pos):
@@ -268,7 +292,7 @@ class FaceTrackingNode(Node):
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.5
         marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
+        marker.lifetime.nanosec = 200000000  # 0.2초
         self.marker_robot_pub.publish(marker)
         
         # 텍스트 마커 (별도 토픽)
@@ -287,7 +311,7 @@ class FaceTrackingNode(Node):
         text.color.r, text.color.g, text.color.b, text.color.a = 1.0, 0.0, 0.0, 1.0
         text.text = "Raw"
         text.lifetime.sec = 0
-        text.lifetime.nanosec = 0
+        text.lifetime.nanosec = 200000000  # 0.2초
         self.text_robot_pub.publish(text)
     
     def publish_line_marker(self, camera_pos):
@@ -334,9 +358,14 @@ class FaceTrackingNode(Node):
             self.fail_count = 0
             self.last_fps_time = current_time
         
-        # 얼굴 감지 실패 시 조기 리턴 (EKF 마커도 표시 안 함)
+        # 얼굴 감지 실패 시 모든 마커 삭제
         if len(self.faces_data) < 4:
+            if self.face_detected:  # 이전에 감지되었다면 삭제 마커 발행
+                self.delete_all_markers()
+                self.face_detected = False
             return
+        
+        self.face_detected = True
         
         center_x, center_y = self.faces_data[0], self.faces_data[1]
         
