@@ -34,7 +34,7 @@ class FaceDetectionNode(Node):
         # 파라미터 선언
         self.declare_parameter('model_selection', 1)  # 0=근거리(2m), 1=원거리(5m)
         self.declare_parameter('min_detection_confidence', 0.5)
-        self.declare_parameter('show_window', True)
+        self.declare_parameter('show_window', False)  # GUI 없이 실행 (headless 환경)
         self.declare_parameter('draw_landmarks', False)  # 468개 랜드마크 표시 여부
         
         model_selection = self.get_parameter('model_selection').value
