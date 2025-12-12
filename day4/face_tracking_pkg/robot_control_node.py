@@ -86,6 +86,12 @@ class RobotControlNode(Node):
         self.ekf_text_pub = self.create_publisher(
             Marker, '/face_tracking/text_ekf_filtered', 10)
         
+        # TCP 위치 시각화 마커 퍼블리셔 (보라색 큐브)
+        self.tcp_marker_pub = self.create_publisher(
+            Marker, '/robot_control/tcp_marker', 10)
+        self.tcp_text_pub = self.create_publisher(
+            Marker, '/robot_control/tcp_text', 10)
+        
         self.get_logger().info("=" * 60)
         self.get_logger().info("🤖 Robot Control Node - Cartesian Velocity Control")
         self.get_logger().info(f"  Robot: {self.robot_id} / {self.robot_model}")
@@ -187,6 +193,52 @@ class RobotControlNode(Node):
         text.lifetime.sec = 0
         text.lifetime.nanosec = 200000000  # 0.2초
         self.ekf_text_pub.publish(text)
+    
+    def publish_tcp_marker(self, tcp_pos):
+        """
+        현재 로봇 TCP 위치 시각화 (보라색 큐브)
+        
+        Args:
+            tcp_pos: [x, y, z, rx, ry, rz] in mm and degrees
+        """
+        # 큐브 마커
+        marker = Marker()
+        marker.header.frame_id = "base_link"
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "robot_tcp"
+        marker.id = 0
+        marker.type = Marker.CUBE
+        marker.action = Marker.ADD
+        marker.pose.position.x = tcp_pos[0] / 1000.0
+        marker.pose.position.y = tcp_pos[1] / 1000.0
+        marker.pose.position.z = tcp_pos[2] / 1000.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.10
+        marker.scale.y = 0.10
+        marker.scale.z = 0.10
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.8, 0.0, 0.8, 0.7  # 보라색
+        marker.lifetime.sec = 0
+        marker.lifetime.nanosec = 200000000  # 0.2초
+        self.tcp_marker_pub.publish(marker)
+        
+        # 텍스트 마커
+        text = Marker()
+        text.header.frame_id = "base_link"
+        text.header.stamp = self.get_clock().now().to_msg()
+        text.ns = "robot_tcp_text"
+        text.id = 0
+        text.type = Marker.TEXT_VIEW_FACING
+        text.action = Marker.ADD
+        text.pose.position.x = tcp_pos[0] / 1000.0
+        text.pose.position.y = tcp_pos[1] / 1000.0
+        text.pose.position.z = tcp_pos[2] / 1000.0 + 0.10
+        text.pose.orientation.w = 1.0
+        text.scale.z = 0.05
+        text.color.r, text.color.g, text.color.b, text.color.a = 0.8, 0.0, 0.8, 1.0
+        text.text = "TCP"
+        text.lifetime.sec = 0
+        text.lifetime.nanosec = 200000000  # 0.2초
+        self.tcp_text_pub.publish(text)
     
     def is_safe_position(self, pos):
         """
@@ -312,6 +364,9 @@ def main(args=None):
             if node.state == "TRACKING" and node.target_pos is not None:
                 # 현재 TCP 위치
                 current_tcp = list(get_current_posx()[0])
+                
+                # TCP 위치 시각화 (보라색 큐브)
+                node.publish_tcp_marker(current_tcp)
                 
                 # Velocity 계산
                 velocity = node.track_face(node.target_pos, current_tcp)
