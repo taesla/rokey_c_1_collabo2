@@ -167,22 +167,23 @@ class FaceTrackingNode(Node):
             return None
     
     def publish_camera_marker(self, camera_pos):
-        """카메라 프레임 마커 (초록색 큐브)"""
+        """카메라 프레임 마커 (초록색 큐브) - base_link 프레임으로 변환하여 표시"""
+        # TF 변환으로 base_link 좌표 얻기
+        robot_pos = self.camera_to_robot_tf2(camera_pos)
+        if robot_pos is None:
+            return
+        
         marker = Marker()
-        marker.header.frame_id = self.camera_frame
+        marker.header.frame_id = self.robot_frame  # base_link 사용
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_camera"
         marker.id = 0
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose.position.x = camera_pos[0] / 1000.0
-        marker.pose.position.y = camera_pos[1] / 1000.0
-        marker.pose.position.z = camera_pos[2] / 1000.0
-        # 카메라 optical 프레임 회전 보정 (X축 180도)
-        marker.pose.orientation.x = 1.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 0.0
+        marker.pose.position.x = robot_pos[0] / 1000.0
+        marker.pose.position.y = robot_pos[1] / 1000.0
+        marker.pose.position.z = robot_pos[2] / 1000.0
+        marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.08
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.5
         marker.lifetime.sec = 0
@@ -209,22 +210,23 @@ class FaceTrackingNode(Node):
         self.text_pub.publish(text)
     
     def publish_camera_ekf_marker(self, filtered_pos):
-        """카메라 프레임 EKF 필터링 마커 (청록색 큐브)"""
+        """카메라 프레임 EKF 필터링 마커 (청록색 큐브) - base_link 프레임으로 변환"""
+        # TF 변환으로 base_link 좌표 얻기
+        robot_pos = self.camera_to_robot_tf2(filtered_pos)
+        if robot_pos is None:
+            return
+        
         marker = Marker()
-        marker.header.frame_id = self.camera_frame
+        marker.header.frame_id = self.robot_frame  # base_link 사용
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_camera_ekf"
         marker.id = 0
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose.position.x = filtered_pos[0] / 1000.0
-        marker.pose.position.y = filtered_pos[1] / 1000.0
-        marker.pose.position.z = filtered_pos[2] / 1000.0
-        # 카메라 optical 프레임 회전 보정
-        marker.pose.orientation.x = 1.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 0.0
+        marker.pose.position.x = robot_pos[0] / 1000.0
+        marker.pose.position.y = robot_pos[1] / 1000.0
+        marker.pose.position.z = robot_pos[2] / 1000.0
+        marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.5
         marker.lifetime.sec = 0
