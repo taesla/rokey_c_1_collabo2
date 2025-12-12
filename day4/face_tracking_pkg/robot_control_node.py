@@ -100,6 +100,8 @@ class RobotControlNode(Node):
             Marker, '/face_tracking/marker_robot', self.marker_callback, 10)
         self.ekf_marker_pub = self.create_publisher(
             Marker, '/face_tracking/marker_ekf_filtered', 10)
+        self.ekf_text_pub = self.create_publisher(
+            Marker, '/face_tracking/text_ekf_filtered', 10)
         
         self.get_logger().info("=" * 50)
         self.get_logger().info("🤖 Robot Control Node (J1+J5)")
@@ -187,13 +189,13 @@ class RobotControlNode(Node):
             self.state = "TRACKING"
     
     def publish_ekf_marker(self, filtered_pos):
-        """EKF 필터링된 마커 퍼블리시 (파란색)"""
+        """EKF 필터링된 마커 퍼블리시 (파란색 큐브)"""
         marker = Marker()
         marker.header.frame_id = "base_link"
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_ekf_filtered"
-        marker.id = 10
-        marker.type = Marker.SPHERE
+        marker.id = 0
+        marker.type = Marker.CUBE
         marker.action = Marker.ADD
         marker.pose.position.x = filtered_pos[0] / 1000.0
         marker.pose.position.y = filtered_pos[1] / 1000.0
@@ -205,16 +207,12 @@ class RobotControlNode(Node):
         marker.lifetime.nanosec = 0
         self.ekf_marker_pub.publish(marker)
         
-        # 짧은 딜레이
-        import time
-        time.sleep(0.001)
-        
-        # 텍스트 마커
+        # 텍스트 마커 (별도 토픽)
         text = Marker()
         text.header.frame_id = "base_link"
         text.header.stamp = self.get_clock().now().to_msg()
         text.ns = "face_ekf_text"
-        text.id = 110
+        text.id = 0
         text.type = Marker.TEXT_VIEW_FACING
         text.action = Marker.ADD
         text.pose.position.x = filtered_pos[0] / 1000.0
@@ -226,7 +224,7 @@ class RobotControlNode(Node):
         text.text = "Filtered"
         text.lifetime.sec = 0
         text.lifetime.nanosec = 0
-        self.ekf_marker_pub.publish(text)
+        self.ekf_text_pub.publish(text)
     
     def is_safe_position(self, pos):
         """위치 안전 확인"""

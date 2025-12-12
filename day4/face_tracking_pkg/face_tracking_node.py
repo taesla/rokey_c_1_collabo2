@@ -63,6 +63,10 @@ class FaceTrackingNode(Node):
         self.marker_pub = self.create_publisher(Marker, '/face_tracking/marker', 10)
         self.marker_robot_pub = self.create_publisher(Marker, '/face_tracking/marker_robot', 10)
         self.marker_ekf_pub = self.create_publisher(Marker, '/face_tracking/marker_ekf', 10)  # EKF 필터링된 카메라 프레임
+        # 텍스트 전용 토픽
+        self.text_pub = self.create_publisher(Marker, '/face_tracking/text', 10)
+        self.text_ekf_pub = self.create_publisher(Marker, '/face_tracking/text_ekf', 10)
+        self.text_robot_pub = self.create_publisher(Marker, '/face_tracking/text_robot', 10)
         self.line_pub = self.create_publisher(Marker, '/face_tracking/line', 10)
         
         # EKF 초기화 (카메라 프레임 좌표 필터링용)
@@ -163,13 +167,13 @@ class FaceTrackingNode(Node):
             return None
     
     def publish_camera_marker(self, camera_pos):
-        """카메라 프레임 마커 (초록색)"""
+        """카메라 프레임 마커 (초록색 큐브)"""
         marker = Marker()
         marker.header.frame_id = self.camera_frame
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_camera"
         marker.id = 0
-        marker.type = Marker.SPHERE
+        marker.type = Marker.CUBE
         marker.action = Marker.ADD
         marker.pose.position.x = camera_pos[0] / 1000.0
         marker.pose.position.y = camera_pos[1] / 1000.0
@@ -181,15 +185,12 @@ class FaceTrackingNode(Node):
         marker.lifetime.nanosec = 0
         self.marker_pub.publish(marker)
         
-        import time
-        time.sleep(0.001)
-        
-        # 텍스트 마커
+        # 텍스트 마커 (별도 토픽)
         text = Marker()
         text.header.frame_id = self.camera_frame
         text.header.stamp = self.get_clock().now().to_msg()
         text.ns = "face_camera_text"
-        text.id = 100
+        text.id = 0
         text.type = Marker.TEXT_VIEW_FACING
         text.action = Marker.ADD
         text.pose.position.x = camera_pos[0] / 1000.0
@@ -201,16 +202,16 @@ class FaceTrackingNode(Node):
         text.text = "Raw"
         text.lifetime.sec = 0
         text.lifetime.nanosec = 0
-        self.marker_pub.publish(text)
+        self.text_pub.publish(text)
     
     def publish_camera_ekf_marker(self, filtered_pos):
-        """카메라 프레임 EKF 필터링 마커 (청록색)"""
+        """카메라 프레임 EKF 필터링 마커 (청록색 큐브)"""
         marker = Marker()
         marker.header.frame_id = self.camera_frame
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_camera_ekf"
-        marker.id = 5
-        marker.type = Marker.SPHERE
+        marker.id = 0
+        marker.type = Marker.CUBE
         marker.action = Marker.ADD
         marker.pose.position.x = filtered_pos[0] / 1000.0
         marker.pose.position.y = filtered_pos[1] / 1000.0
@@ -222,16 +223,12 @@ class FaceTrackingNode(Node):
         marker.lifetime.nanosec = 0
         self.marker_ekf_pub.publish(marker)
         
-        # 짧은 딜레이 (텍스트 마커가 제대로 전송되도록)
-        import time
-        time.sleep(0.001)
-        
-        # 텍스트 마커
+        # 텍스트 마커 (별도 토픽)
         text = Marker()
         text.header.frame_id = self.camera_frame
         text.header.stamp = self.get_clock().now().to_msg()
         text.ns = "face_camera_ekf_text"
-        text.id = 105
+        text.id = 0
         text.type = Marker.TEXT_VIEW_FACING
         text.action = Marker.ADD
         text.pose.position.x = filtered_pos[0] / 1000.0
@@ -243,16 +240,16 @@ class FaceTrackingNode(Node):
         text.text = "Filtered"
         text.lifetime.sec = 0
         text.lifetime.nanosec = 0
-        self.marker_ekf_pub.publish(text)
+        self.text_ekf_pub.publish(text)
     
     def publish_robot_marker(self, robot_pos):
-        """로봇 베이스 프레임 마커 (빨간색)"""
+        """로봇 베이스 프레임 마커 (빨간색 큐브)"""
         marker = Marker()
         marker.header.frame_id = self.robot_frame
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_robot_target"
-        marker.id = 1
-        marker.type = Marker.SPHERE
+        marker.id = 0
+        marker.type = Marker.CUBE
         marker.action = Marker.ADD
         marker.pose.position.x = robot_pos[0] / 1000.0
         marker.pose.position.y = robot_pos[1] / 1000.0
@@ -264,15 +261,12 @@ class FaceTrackingNode(Node):
         marker.lifetime.nanosec = 0
         self.marker_robot_pub.publish(marker)
         
-        import time
-        time.sleep(0.001)
-        
-        # 텍스트 마커
+        # 텍스트 마커 (별도 토픽)
         text = Marker()
         text.header.frame_id = self.robot_frame
         text.header.stamp = self.get_clock().now().to_msg()
         text.ns = "face_robot_text"
-        text.id = 101
+        text.id = 0
         text.type = Marker.TEXT_VIEW_FACING
         text.action = Marker.ADD
         text.pose.position.x = robot_pos[0] / 1000.0
@@ -284,7 +278,7 @@ class FaceTrackingNode(Node):
         text.text = "Raw"
         text.lifetime.sec = 0
         text.lifetime.nanosec = 0
-        self.marker_robot_pub.publish(text)
+        self.text_robot_pub.publish(text)
     
     def publish_line_marker(self, camera_pos):
         """카메라→얼굴 라인 (노란색)"""
