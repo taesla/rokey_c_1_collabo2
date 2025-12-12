@@ -202,7 +202,7 @@ class RobotControlNode(Node):
         marker.pose.position.z = filtered_pos[2] / 1000.0
         marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.12
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.5, 1.0, 0.8
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.5, 1.0, 0.3
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.ekf_marker_pub.publish(marker)

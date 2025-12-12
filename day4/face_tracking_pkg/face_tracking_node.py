@@ -178,9 +178,13 @@ class FaceTrackingNode(Node):
         marker.pose.position.x = camera_pos[0] / 1000.0
         marker.pose.position.y = camera_pos[1] / 1000.0
         marker.pose.position.z = camera_pos[2] / 1000.0
-        marker.pose.orientation.w = 1.0
+        # 카메라 optical 프레임 회전 보정 (X축 180도)
+        marker.pose.orientation.x = 1.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 0.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.08
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.8
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.3
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_pub.publish(marker)
@@ -216,9 +220,13 @@ class FaceTrackingNode(Node):
         marker.pose.position.x = filtered_pos[0] / 1000.0
         marker.pose.position.y = filtered_pos[1] / 1000.0
         marker.pose.position.z = filtered_pos[2] / 1000.0
-        marker.pose.orientation.w = 1.0
+        # 카메라 optical 프레임 회전 보정
+        marker.pose.orientation.x = 1.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 0.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.8
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.3
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_ekf_pub.publish(marker)
@@ -256,7 +264,7 @@ class FaceTrackingNode(Node):
         marker.pose.position.z = robot_pos[2] / 1000.0
         marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.8
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.3
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_robot_pub.publish(marker)
