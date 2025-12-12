@@ -8,7 +8,8 @@ router = APIRouter(prefix="/device", tags=["Device"])
 
 # 🔌 아두이노 시리얼 연결 (전역에서 1번만 연결 유지)
 try:
-    arduino = serial.Serial("/dev/ttyUSB0", 9600, timeout=1)
+    arduino = serial.Serial("/dev/ttyACM0", 9600, timeout=1)
+
     time.sleep(2)  # 아두이노 리셋 대기
 except Exception as e:
     print("⚠ 아두이노 연결 실패:", e)

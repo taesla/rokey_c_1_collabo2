@@ -47,9 +47,7 @@ export default function ServoControl() {
             SAFE - SERVO OFF
           </button>
         </div>
-        <p className="servo-note">
-          * 사주 경계 모드 연동 시 M0609 포지션 제어와 함께 사용.
-        </p>
+      
       </div>
     </div>
   );
