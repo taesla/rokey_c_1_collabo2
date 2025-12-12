@@ -184,22 +184,22 @@ class FaceTrackingNode(Node):
         marker.pose.orientation.z = 0.0
         marker.pose.orientation.w = 0.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.08
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.3
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.5
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_pub.publish(marker)
         
-        # 텍스트 마커 (별도 토픽)
+        # 텍스트 마커 (별도 토픽) - base_link
         text = Marker()
-        text.header.frame_id = self.camera_frame
+        text.header.frame_id = self.robot_frame
         text.header.stamp = self.get_clock().now().to_msg()
         text.ns = "face_camera_text"
         text.id = 0
         text.type = Marker.TEXT_VIEW_FACING
         text.action = Marker.ADD
-        text.pose.position.x = camera_pos[0] / 1000.0
-        text.pose.position.y = camera_pos[1] / 1000.0
-        text.pose.position.z = camera_pos[2] / 1000.0 + 0.08
+        text.pose.position.x = robot_pos[0] / 1000.0
+        text.pose.position.y = robot_pos[1] / 1000.0
+        text.pose.position.z = robot_pos[2] / 1000.0 + 0.08
         text.pose.orientation.w = 1.0
         text.scale.z = 0.04
         text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 1.0, 0.0, 1.0
@@ -226,22 +226,22 @@ class FaceTrackingNode(Node):
         marker.pose.orientation.z = 0.0
         marker.pose.orientation.w = 0.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.3
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.5
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_ekf_pub.publish(marker)
         
-        # 텍스트 마커 (별도 토픽)
+        # 텍스트 마커 (별도 토픽) - base_link
         text = Marker()
-        text.header.frame_id = self.camera_frame
+        text.header.frame_id = self.robot_frame
         text.header.stamp = self.get_clock().now().to_msg()
         text.ns = "face_camera_ekf_text"
         text.id = 0
         text.type = Marker.TEXT_VIEW_FACING
         text.action = Marker.ADD
-        text.pose.position.x = filtered_pos[0] / 1000.0
-        text.pose.position.y = filtered_pos[1] / 1000.0
-        text.pose.position.z = filtered_pos[2] / 1000.0 + 0.10
+        text.pose.position.x = robot_pos[0] / 1000.0
+        text.pose.position.y = robot_pos[1] / 1000.0
+        text.pose.position.z = robot_pos[2] / 1000.0 + 0.10
         text.pose.orientation.w = 1.0
         text.scale.z = 0.04
         text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 1.0, 1.0, 1.0
@@ -264,7 +264,7 @@ class FaceTrackingNode(Node):
         marker.pose.position.z = robot_pos[2] / 1000.0
         marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.3
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.5
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_robot_pub.publish(marker)
