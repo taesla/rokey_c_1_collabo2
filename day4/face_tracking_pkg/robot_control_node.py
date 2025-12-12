@@ -205,6 +205,10 @@ class RobotControlNode(Node):
         marker.lifetime.nanosec = 0
         self.ekf_marker_pub.publish(marker)
         
+        # 짧은 딜레이
+        import time
+        time.sleep(0.001)
+        
         # 텍스트 마커
         text = Marker()
         text.header.frame_id = "base_link"

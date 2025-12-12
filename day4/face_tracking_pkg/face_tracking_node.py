@@ -181,6 +181,9 @@ class FaceTrackingNode(Node):
         marker.lifetime.nanosec = 0
         self.marker_pub.publish(marker)
         
+        import time
+        time.sleep(0.001)
+        
         # 텍스트 마커
         text = Marker()
         text.header.frame_id = self.camera_frame
@@ -219,6 +222,10 @@ class FaceTrackingNode(Node):
         marker.lifetime.nanosec = 0
         self.marker_ekf_pub.publish(marker)
         
+        # 짧은 딜레이 (텍스트 마커가 제대로 전송되도록)
+        import time
+        time.sleep(0.001)
+        
         # 텍스트 마커
         text = Marker()
         text.header.frame_id = self.camera_frame
@@ -256,6 +263,9 @@ class FaceTrackingNode(Node):
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 0
         self.marker_robot_pub.publish(marker)
+        
+        import time
+        time.sleep(0.001)
         
         # 텍스트 마커
         text = Marker()
