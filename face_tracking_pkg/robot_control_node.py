@@ -74,6 +74,10 @@ class RobotControlNode(Node):
         self.last_move_time = time.time()
         self.control_period = 0.1  # 10Hz (현실화: amovel 한계 고려)
         
+        # Velocity Low-pass Filter (부드러운 모션)
+        self.velocity_filter_alpha = 0.3  # 0=이전값만, 1=새값만 (0.3=부드럽게)
+        self.prev_velocity = np.array([0.0, 0.0, 0.0])
+        
         # EKF 초기화 (10Hz)
         self.ekf = None
         if self.use_ekf:
@@ -105,6 +109,10 @@ class RobotControlNode(Node):
         # 비비탄 조준선 퍼블리셔 (빨간 라인: TCP → 얼굴)
         self.aim_line_pub = self.create_publisher(
             Marker, '/robot_control/aim_line', 10)
+        
+        # 조준 거리 텍스트 퍼블리셔
+        self.aim_distance_pub = self.create_publisher(
+            Marker, '/robot_control/aim_distance', 10)
         
         # 얼굴 위치 저장 (조준선용)
         self.filtered_face_pos = None
@@ -209,6 +217,10 @@ class RobotControlNode(Node):
         velocity_norm = np.linalg.norm(velocity)
         if velocity_norm > self.v_max:
             velocity = velocity * (self.v_max / velocity_norm)
+        
+        # 7. Low-pass filter (부드러운 모션)
+        velocity = self.velocity_filter_alpha * velocity + (1 - self.velocity_filter_alpha) * self.prev_velocity
+        self.prev_velocity = velocity.copy()
         
         return velocity.tolist()
     
@@ -359,6 +371,28 @@ class RobotControlNode(Node):
         marker.lifetime.sec = 0
         marker.lifetime.nanosec = 500000000  # 0.5초
         self.aim_line_pub.publish(marker)
+        
+        # 거리 텍스트 마커 (TCP → Filtered 거리)
+        # 중간 지점에 표시
+        mid_point = (tcp + face) / 2
+        
+        text_marker = Marker()
+        text_marker.header.frame_id = "base_link"
+        text_marker.header.stamp = self.get_clock().now().to_msg()
+        text_marker.ns = "aim_distance"
+        text_marker.id = 0
+        text_marker.type = Marker.TEXT_VIEW_FACING
+        text_marker.action = Marker.ADD
+        text_marker.pose.position.x = mid_point[0]
+        text_marker.pose.position.y = mid_point[1]
+        text_marker.pose.position.z = mid_point[2] + 0.05  # 약간 위로
+        text_marker.pose.orientation.w = 1.0
+        text_marker.scale.z = 0.04  # 텍스트 크기
+        text_marker.color.r, text_marker.color.g, text_marker.color.b, text_marker.color.a = 1.0, 1.0, 1.0, 1.0  # 흰색
+        text_marker.text = f"{distance:.2f}m"  # 미터 단위
+        text_marker.lifetime.sec = 0
+        text_marker.lifetime.nanosec = 500000000  # 0.5초
+        self.aim_distance_pub.publish(text_marker)
     
     def send_servol_command(self, target_tcp, velocity_norm):
         """

@@ -464,6 +464,38 @@ class FaceTrackingNode(Node):
         if robot_pos_xyz is None:
             return
         
+        # ============================================
+        # 안전구역 클램핑 (Target이 안전 범위 내에 있도록)
+        # ============================================
+        # 로봇 도달 가능 범위 (m0609: 900mm reach)
+        safe_r_min = 300.0   # 최소 반경 (mm) - 로봇 몸통 충돌 방지
+        safe_r_max = 850.0   # 최대 반경 (mm) - 도달 한계
+        safe_z_min = 150.0   # 최소 높이 (mm) - 테이블 충돌 방지
+        safe_z_max = 800.0   # 최대 높이 (mm)
+        
+        # XY 평면 반경 계산
+        r_xy = np.sqrt(robot_pos_xyz[0]**2 + robot_pos_xyz[1]**2)
+        
+        # 반경 클램핑
+        if r_xy < safe_r_min:
+            scale = safe_r_min / r_xy if r_xy > 0 else 1.0
+            robot_pos_xyz[0] *= scale
+            robot_pos_xyz[1] *= scale
+            self.get_logger().warn(f"⚠️ Target 반경 클램핑: {r_xy:.0f} → {safe_r_min:.0f}mm", throttle_duration_sec=2.0)
+        elif r_xy > safe_r_max:
+            scale = safe_r_max / r_xy
+            robot_pos_xyz[0] *= scale
+            robot_pos_xyz[1] *= scale
+            self.get_logger().warn(f"⚠️ Target 반경 클램핑: {r_xy:.0f} → {safe_r_max:.0f}mm", throttle_duration_sec=2.0)
+        
+        # Z 높이 클램핑
+        if robot_pos_xyz[2] < safe_z_min:
+            self.get_logger().warn(f"⚠️ Target Z 클램핑: {robot_pos_xyz[2]:.0f} → {safe_z_min:.0f}mm", throttle_duration_sec=2.0)
+            robot_pos_xyz[2] = safe_z_min
+        elif robot_pos_xyz[2] > safe_z_max:
+            self.get_logger().warn(f"⚠️ Target Z 클램핑: {robot_pos_xyz[2]:.0f} → {safe_z_max:.0f}mm", throttle_duration_sec=2.0)
+            robot_pos_xyz[2] = safe_z_max
+        
         # 디버그: 목표 위치 로그
         self.get_logger().info(
             f"📍 Target: [{robot_pos_xyz[0]:.0f}, {robot_pos_xyz[1]:.0f}, {robot_pos_xyz[2]:.0f}]mm | "
