@@ -29,6 +29,8 @@ setup(
     entry_points={
         'console_scripts': [
             'face_detection_node = face_tracking_pkg.face_detection_node:main',
+            'face_detection_yolo_node = face_tracking_pkg.face_detection_yolo_node:main',
+            'face_detection_yolo_optimized_node = face_tracking_pkg.face_detection_yolo_optimized_node:main',
             'face_tracking_node = face_tracking_pkg.face_tracking_node:main',
             'robot_control_node = face_tracking_pkg.robot_control_node:main',
             'robot_control_mpc_node = face_tracking_pkg.robot_control_mpc_node:main',
