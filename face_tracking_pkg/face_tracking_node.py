@@ -14,6 +14,7 @@ Published Topics:
   /face_tracking/marker_robot - RViz 마커 (로봇 베이스 프레임, 빨간색) ← 로봇 목표 위치!
   /face_tracking/line - 카메라→얼굴 연결선 (노란색)
 """
+import math
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -63,10 +64,17 @@ class FaceTrackingNode(Node):
         self.marker_pub = self.create_publisher(Marker, '/face_tracking/marker', 10)
         self.marker_robot_pub = self.create_publisher(Marker, '/face_tracking/marker_robot', 10)
         self.marker_ekf_pub = self.create_publisher(Marker, '/face_tracking/marker_ekf', 10)  # EKF 필터링된 카메라 프레임
+        # 텍스트 전용 토픽
+        self.text_pub = self.create_publisher(Marker, '/face_tracking/text', 10)
+        self.text_ekf_pub = self.create_publisher(Marker, '/face_tracking/text_ekf', 10)
+        self.text_robot_pub = self.create_publisher(Marker, '/face_tracking/text_robot', 10)
         self.line_pub = self.create_publisher(Marker, '/face_tracking/line', 10)
         
         # EKF 초기화 (카메라 프레임 좌표 필터링용)
         self.camera_ekf = FaceTrackingEKF(dt=0.033, dim=3)
+        
+        # 얼굴 감지 상태 플래그
+        self.face_detected = False
         
         # 타이머: 트래킹 루프 (30Hz) - 병목 해결
         self.timer = self.create_timer(0.033, self.tracking_loop)
@@ -105,11 +113,11 @@ class FaceTrackingNode(Node):
         x, y = int(center_x), int(center_y)
         h, w = self.depth_frame.shape
         
-        if x < 5 or x >= w - 5 or y < 5 or y >= h - 5:
+        if x < 10 or x >= w - 10 or y < 10 or y >= h - 10:
             return None
         
-        # 최적화: 5x5 영역에서 median 대신 중심 3x3만 사용
-        depth_region = self.depth_frame[y-1:y+2, x-1:x+2]
+        # 개선: 9x9 영역 사용 (3x3는 너무 작아서 노이즈에 민감)
+        depth_region = self.depth_frame[y-4:y+5, x-4:x+5]
         valid_depths = depth_region[depth_region > 0]
         
         if len(valid_depths) == 0:
@@ -162,78 +170,216 @@ class FaceTrackingNode(Node):
             self.get_logger().warn(f"TF2 변환 실패: {e}")
             return None
     
+    def delete_all_markers(self):
+        """모든 마커와 텍스트를 삭제"""
+        marker_ids = [
+            (self.marker_pub, "face_camera"),
+            (self.text_pub, "face_camera_text"),
+            (self.marker_ekf_pub, "face_camera_ekf"),
+            (self.text_ekf_pub, "face_camera_ekf_text"),
+            (self.marker_robot_pub, "face_robot_target"),
+            (self.text_robot_pub, "face_robot_text"),
+            (self.line_pub, "face_line")
+        ]
+        
+        for pub, ns in marker_ids:
+            marker = Marker()
+            marker.header.frame_id = self.robot_frame
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = ns
+            marker.id = 0
+            marker.action = Marker.DELETE
+            pub.publish(marker)
+    
     def publish_camera_marker(self, camera_pos):
-        """카메라 프레임 마커 (초록색)"""
+        """카메라 프레임 마커 (초록색 큐브) - base_link 프레임으로 변환하여 표시"""
+        # TF 변환으로 base_link 좌표 얻기
+        robot_pos = self.camera_to_robot_tf2(camera_pos)
+        if robot_pos is None:
+            return
+        
         marker = Marker()
-        marker.header.frame_id = self.camera_frame
+        marker.header.frame_id = self.robot_frame  # base_link 사용
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_camera"
         marker.id = 0
-        marker.type = Marker.SPHERE
+        marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose.position.x = camera_pos[0] / 1000.0
-        marker.pose.position.y = camera_pos[1] / 1000.0
-        marker.pose.position.z = camera_pos[2] / 1000.0
+        marker.pose.position.x = robot_pos[0] / 1000.0
+        marker.pose.position.y = robot_pos[1] / 1000.0
+        marker.pose.position.z = robot_pos[2] / 1000.0
         marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.08
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.8
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 1.0, 0.0, 0.5
         marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
+        marker.lifetime.nanosec = 500000000  # 0.5초
         self.marker_pub.publish(marker)
+        
+        # 텍스트 마커 (별도 토픽) - base_link
+        text = Marker()
+        text.header.frame_id = self.robot_frame
+        text.header.stamp = self.get_clock().now().to_msg()
+        text.ns = "face_camera_text"
+        text.id = 0
+        text.type = Marker.TEXT_VIEW_FACING
+        text.action = Marker.ADD
+        text.pose.position.x = robot_pos[0] / 1000.0
+        text.pose.position.y = robot_pos[1] / 1000.0
+        text.pose.position.z = robot_pos[2] / 1000.0 + 0.08
+        text.pose.orientation.w = 1.0
+        text.scale.z = 0.04
+        text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 1.0, 0.0, 1.0
+        text.text = "Raw"
+        text.lifetime.sec = 0
+        text.lifetime.nanosec = 500000000  # 0.5초
+        self.text_pub.publish(text)
     
     def publish_camera_ekf_marker(self, filtered_pos):
-        """카메라 프레임 EKF 필터링 마커 (청록색)"""
+        """카메라 프레임 EKF 필터링 마커 (청록색 큐브) - base_link 프레임으로 변환"""
+        # TF 변환으로 base_link 좌표 얻기
+        robot_pos = self.camera_to_robot_tf2(filtered_pos)
+        if robot_pos is None:
+            return
+        
         marker = Marker()
-        marker.header.frame_id = self.camera_frame
+        marker.header.frame_id = self.robot_frame  # base_link 사용
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_camera_ekf"
-        marker.id = 5
-        marker.type = Marker.SPHERE
-        marker.action = Marker.ADD
-        marker.pose.position.x = filtered_pos[0] / 1000.0
-        marker.pose.position.y = filtered_pos[1] / 1000.0
-        marker.pose.position.z = filtered_pos[2] / 1000.0
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = marker.scale.y = marker.scale.z = 0.10
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.8
-        marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
-        self.marker_ekf_pub.publish(marker)
-    
-    def publish_robot_marker(self, robot_pos):
-        """로봇 베이스 프레임 마커 (빨간색)"""
-        marker = Marker()
-        marker.header.frame_id = self.robot_frame
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = "face_robot_target"
-        marker.id = 1
-        marker.type = Marker.SPHERE
+        marker.id = 0
+        marker.type = Marker.CUBE
         marker.action = Marker.ADD
         marker.pose.position.x = robot_pos[0] / 1000.0
         marker.pose.position.y = robot_pos[1] / 1000.0
         marker.pose.position.z = robot_pos[2] / 1000.0
         marker.pose.orientation.w = 1.0
         marker.scale.x = marker.scale.y = marker.scale.z = 0.10
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.8
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.0, 0.8, 0.8, 0.5
         marker.lifetime.sec = 0
-        marker.lifetime.nanosec = 0
+        marker.lifetime.nanosec = 500000000  # 0.5초
+        self.marker_ekf_pub.publish(marker)
+        
+        # 텍스트 마커 (별도 토픽) - base_link
+        text = Marker()
+        text.header.frame_id = self.robot_frame
+        text.header.stamp = self.get_clock().now().to_msg()
+        text.ns = "face_camera_ekf_text"
+        text.id = 0
+        text.type = Marker.TEXT_VIEW_FACING
+        text.action = Marker.ADD
+        text.pose.position.x = robot_pos[0] / 1000.0
+        text.pose.position.y = robot_pos[1] / 1000.0
+        text.pose.position.z = robot_pos[2] / 1000.0 + 0.10
+        text.pose.orientation.w = 1.0
+        text.scale.z = 0.04
+        text.color.r, text.color.g, text.color.b, text.color.a = 0.0, 1.0, 1.0, 1.0
+        text.text = "Filtered"
+        text.lifetime.sec = 0
+        text.lifetime.nanosec = 500000000  # 0.5초
+        self.text_ekf_pub.publish(text)
+    
+    def publish_robot_marker(self, robot_pos):
+        """로봇 베이스 프레임 마커 (빨간색 큐브)"""
+        marker = Marker()
+        marker.header.frame_id = self.robot_frame
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "face_robot_target"
+        marker.id = 0
+        marker.type = Marker.CUBE
+        marker.action = Marker.ADD
+        marker.pose.position.x = robot_pos[0] / 1000.0
+        marker.pose.position.y = robot_pos[1] / 1000.0
+        marker.pose.position.z = robot_pos[2] / 1000.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = marker.scale.y = marker.scale.z = 0.10
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 0.0, 0.0, 0.5
+        marker.lifetime.sec = 0
+        marker.lifetime.nanosec = 500000000  # 0.5초
         self.marker_robot_pub.publish(marker)
+        
+        # 텍스트 마커 (별도 토픽)
+        text = Marker()
+        text.header.frame_id = self.robot_frame
+        text.header.stamp = self.get_clock().now().to_msg()
+        text.ns = "face_robot_text"
+        text.id = 0
+        text.type = Marker.TEXT_VIEW_FACING
+        text.action = Marker.ADD
+        text.pose.position.x = robot_pos[0] / 1000.0
+        text.pose.position.y = robot_pos[1] / 1000.0
+        text.pose.position.z = robot_pos[2] / 1000.0 + 0.10
+        text.pose.orientation.w = 1.0
+        text.scale.z = 0.05
+        text.color.r, text.color.g, text.color.b, text.color.a = 1.0, 0.0, 0.0, 1.0
+        text.text = "Target"
+        text.lifetime.sec = 0
+        text.lifetime.nanosec = 500000000  # 0.5초
+        self.text_robot_pub.publish(text)
     
     def publish_line_marker(self, camera_pos):
-        """카메라→얼굴 라인 (노란색)"""
+        """
+        카메라→얼굴 투영 라인 (노란색) 
+        공학적으로 정확한 투영: RGB 렌즈 중심 → 얼굴 위치
+        base_link 프레임에서 TF 변환을 사용하여 정확히 마커 중심을 통과
+        """
+        try:
+            # RGB 렌즈 위치를 camera_link 프레임에서 base_link로 변환
+            # D435i: RGB 렌즈는 camera_link 중심에서 약 Y=-15mm 위치
+            transform = self.tf_buffer.lookup_transform(
+                self.robot_frame,  # base_link
+                "camera_link",
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=0.1)
+            )
+            
+            # RGB 렌즈 위치 (camera_link 기준: Y=-15mm)
+            # camera_link: X=앞, Y=왼쪽, Z=위
+            from geometry_msgs.msg import PointStamped
+            rgb_point = PointStamped()
+            rgb_point.header.frame_id = "camera_link"
+            rgb_point.header.stamp = self.get_clock().now().to_msg()
+            rgb_point.point.x = 0.0
+            rgb_point.point.y = -0.015  # RGB 렌즈 오프셋 (camera_link에서 오른쪽)
+            rgb_point.point.z = 0.0
+            
+            # TF 변환
+            from tf2_geometry_msgs import do_transform_point
+            rgb_transformed = do_transform_point(rgb_point, transform)
+            
+            rgb_origin_robot = [
+                rgb_transformed.point.x * 1000.0,
+                rgb_transformed.point.y * 1000.0,
+                rgb_transformed.point.z * 1000.0
+            ]
+        except Exception as e:
+            self.get_logger().warn(f"RGB lens TF failed: {e}", throttle_duration_sec=5.0)
+            return
+        
+        # 얼굴 위치도 TF 변환
+        face_pos_robot = self.camera_to_robot_tf2(camera_pos)
+        if face_pos_robot is None:
+            return
+        
         marker = Marker()
-        marker.header.frame_id = self.camera_frame
+        marker.header.frame_id = self.robot_frame  # base_link
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = "face_line"
         marker.id = 2
         marker.type = Marker.LINE_STRIP
         marker.action = Marker.ADD
         
+        # p1: RGB 렌즈 중심 (base_link 좌표)
         p1 = Point()
-        p2 = Point()
-        p2.x, p2.y, p2.z = camera_pos[0]/1000.0, camera_pos[1]/1000.0, camera_pos[2]/1000.0
-        marker.points = [p1, p2]
+        p1.x = rgb_origin_robot[0] / 1000.0
+        p1.y = rgb_origin_robot[1] / 1000.0
+        p1.z = rgb_origin_robot[2] / 1000.0
         
+        # p2: 얼굴 위치 (base_link 좌표)
+        p2 = Point()
+        p2.x = face_pos_robot[0] / 1000.0
+        p2.y = face_pos_robot[1] / 1000.0
+        p2.z = face_pos_robot[2] / 1000.0
+        
+        marker.points = [p1, p2]
         marker.scale.x = 0.01
         marker.color.r, marker.color.g, marker.color.b, marker.color.a = 1.0, 1.0, 0.0, 1.0
         marker.lifetime.nanosec = 500000000
@@ -263,9 +409,14 @@ class FaceTrackingNode(Node):
             self.fail_count = 0
             self.last_fps_time = current_time
         
-        # 얼굴 감지 실패 시 조기 리턴 (EKF 마커도 표시 안 함)
+        # 얼굴 감지 실패 시 모든 마커 삭제
         if len(self.faces_data) < 4:
+            if self.face_detected:  # 이전에 감지되었다면 삭제 마커 발행
+                self.delete_all_markers()
+                self.face_detected = False
             return
+        
+        self.face_detected = True
         
         center_x, center_y = self.faces_data[0], self.faces_data[1]
         
@@ -296,19 +447,49 @@ class FaceTrackingNode(Node):
         # Line 마커도 EKF 필터된 위치 사용 (청록색 마커와 싱크)
         self.publish_line_marker(filtered_camera_pos)
         
-        # 목표 위치 계산 (얼굴에서 offset만큼 떨어진 위치)
-        distance = np.linalg.norm(camera_pos)
-        if distance < 1.0:
+        # 목표 위치 = 필터된 얼굴 위치에서 안전거리만큼 떨어진 위치
+        depth = abs(filtered_camera_pos[2])  # Z축 깊이 (mm)
+        if depth < 100.0:  # 10cm 미만은 무시
             return
         
-        direction = camera_pos / distance
-        target_camera_pos = camera_pos - direction * self.target_offset_mm
+        # 안전거리: 590mm (얼굴에서 59cm 떨어진 위치가 목표)
+        safety_distance = 590.0
+        distance = np.linalg.norm(filtered_camera_pos)
+        direction = filtered_camera_pos / distance
         
-        robot_pos = self.camera_to_robot_tf2(target_camera_pos)
-        if robot_pos is None:
+        # 목표 = 얼굴에서 안전거리만큼 카메라 방향으로
+        target_camera_pos = filtered_camera_pos - direction * safety_distance
+        
+        robot_pos_xyz = self.camera_to_robot_tf2(target_camera_pos)
+        if robot_pos_xyz is None:
             return
         
-        self.publish_robot_marker(robot_pos)
+        # 디버그: 목표 위치 로그
+        self.get_logger().info(
+            f"📍 Target: [{robot_pos_xyz[0]:.0f}, {robot_pos_xyz[1]:.0f}, {robot_pos_xyz[2]:.0f}]mm | "
+            f"Depth: {depth:.0f}mm, Safety: {safety_distance:.0f}mm",
+            throttle_duration_sec=1.0
+        )
+        
+        # TCP 회전 계산 (얼굴을 향하도록) - EKF 필터링된 위치 사용!
+        # Z축 기준 회전 (팔 끝이 얼굴을 가리키도록)
+        face_robot_pos = self.camera_to_robot_tf2(filtered_camera_pos)
+        if face_robot_pos is not None:
+            # 목표에서 얼굴로의 방향
+            vec_to_face = np.array(face_robot_pos) - np.array(robot_pos_xyz)
+            distance_to_face = np.linalg.norm(vec_to_face)
+            if distance_to_face > 10.0:
+                # Z축 회전 (Yaw) 계산
+                rz = math.degrees(math.atan2(vec_to_face[1], vec_to_face[0]))
+                # Y축 회전 (Pitch) 계산
+                ry = -math.degrees(math.atan2(vec_to_face[2], math.sqrt(vec_to_face[0]**2 + vec_to_face[1]**2)))
+                robot_pos = robot_pos_xyz + [0.0, ry, rz]
+            else:
+                robot_pos = robot_pos_xyz + [0.0, 0.0, 0.0]
+        else:
+            robot_pos = robot_pos_xyz + [0.0, 0.0, 0.0]
+        
+        self.publish_robot_marker(robot_pos[:3])  # XYZ만 마커로
 
 
 def main(args=None):

@@ -34,7 +34,7 @@ class FaceDetectionNode(Node):
         # 파라미터 선언
         self.declare_parameter('model_selection', 1)  # 0=근거리(2m), 1=원거리(5m)
         self.declare_parameter('min_detection_confidence', 0.5)
-        self.declare_parameter('show_window', True)
+        self.declare_parameter('show_window', False)  # GUI 없이 실행 (headless 환경)
         self.declare_parameter('draw_landmarks', False)  # 468개 랜드마크 표시 여부
         
         model_selection = self.get_parameter('model_selection').value
@@ -121,9 +121,23 @@ class FaceDetectionNode(Node):
         
         num_faces = 0
         
+        # 여러 얼굴 중 가장 큰 얼굴 (가장 가까운 얼굴) 선택
+        best_detection = None
+        max_area = 0
+        
         if results.detections:
             for detection in results.detections:
-                num_faces += 1
+                bbox = detection.location_data.relative_bounding_box
+                area = bbox.width * bbox.height
+                
+                if area > max_area:
+                    max_area = area
+                    best_detection = detection
+            
+            # 가장 가까운 얼굴만 처리
+            if best_detection:
+                num_faces = 1
+                detection = best_detection
                 
                 # Bounding box 정보
                 bbox = detection.location_data.relative_bounding_box
