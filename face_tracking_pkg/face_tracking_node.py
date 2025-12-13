@@ -71,13 +71,13 @@ class FaceTrackingNode(Node):
         self.line_pub = self.create_publisher(Marker, '/face_tracking/line', 10)
         
         # EKF 초기화 (카메라 프레임 좌표 필터링용)
-        self.camera_ekf = FaceTrackingEKF(dt=0.033, dim=3)
+        self.camera_ekf = FaceTrackingEKF(dt=0.033, dim=3)  # 떨림 방지: 10ms→33ms
         
         # 얼굴 감지 상태 플래그
         self.face_detected = False
         
-        # 타이머: 트래킹 루프 (30Hz) - 병목 해결
-        self.timer = self.create_timer(0.033, self.tracking_loop)
+        # 타이머: 트래킹 루프 (100Hz) - 연산속도 개선
+        self.timer = self.create_timer(0.01, self.tracking_loop)
         
         # 성능 측정
         self.loop_count = 0
@@ -85,7 +85,7 @@ class FaceTrackingNode(Node):
         self.tracking_fps = 0.0
         
         self.get_logger().info("=" * 60)
-        self.get_logger().info("🔄 Face Tracking Node (TF2) 시작! [30Hz]")
+        self.get_logger().info("🔄 Face Tracking Node (TF2) 시작! [100Hz]")
         self.get_logger().info("  🟢 초록 마커: 카메라 프레임")
         self.get_logger().info("  🔴 빨간 마커: 로봇 베이스 프레임 (목표)")
         self.get_logger().info("=" * 60)

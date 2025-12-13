@@ -38,6 +38,7 @@ setup(
             'camera_performance_test = face_tracking_pkg.camera_performance_test:main',
             'ekf_comparison_node = face_tracking_pkg.ekf_comparison_node:main',
             'ekf_before_after = face_tracking_pkg.ekf_before_after:main',
+            'joint_tracking_node = face_tracking_pkg.joint_tracking_node:main',
         ],
     },
 )

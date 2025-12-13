@@ -21,6 +21,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
 from visualization_msgs.msg import Marker
+from sensor_msgs.msg import JointState
 from dsr_msgs2.msg import ServolRtStream
 import DR_init
 from face_tracking_pkg.face_tracking_ekf import FaceTrackingEKF
@@ -35,12 +36,12 @@ class RobotControlNode(Node):
         # 파라미터 선언
         self.declare_parameter('robot_id', 'dsr01')
         self.declare_parameter('robot_model', 'm0609')
-        self.declare_parameter('velocity', 150.0)  # mm/s (빠른 반응: 60→150)
-        self.declare_parameter('acceleration', 300.0)  # mm/s² (빠른 가속: 120→300)
-        self.declare_parameter('k_p', 0.5)  # 비례 게인 (공격적: 0.2→0.5)
-        self.declare_parameter('dead_zone', 20.0)  # mm (민감하게: 50→20)
+        self.declare_parameter('velocity', 250.0)  # mm/s (추적 개선: 150→250)
+        self.declare_parameter('acceleration', 400.0)  # mm/s² (추적 개선: 300→400)
+        self.declare_parameter('k_p', 0.4)  # 비례 게인 (오버슈트 방지: 0.5→0.4)
+        self.declare_parameter('dead_zone', 30.0)  # mm (떨림 방지: 20→30)
         self.declare_parameter('tcp_offset_z', 228.6)  # mm (RG2 그리퍼 TCP offset)
-        self.declare_parameter('use_servol_rt', False)  # 실시간 제어 모드 (1kHz)
+        self.declare_parameter('use_servol_rt', False)  # amovel 사용 (servol_rt는 DSR 드라이버 호환 문제)
         self.declare_parameter('use_ekf', False)  # face_tracking_node에서 이미 필터링됨
         self.declare_parameter('ekf_process_noise', 0.1)
         self.declare_parameter('ekf_measurement_noise', 10.0)
@@ -72,11 +73,15 @@ class RobotControlNode(Node):
         self.state = "IDLE"  # IDLE, TRACKING
         self.target_pos = None  # EKF 필터링된 목표 위치
         self.last_move_time = time.time()
-        self.control_period = 0.05  # 20Hz (빠른 반응: 10Hz→20Hz)
+        self.control_period = 0.02  # 50Hz (떨림 방지: 100Hz→50Hz)
         
-        # Velocity Low-pass Filter (반응속도 우선)
-        self.velocity_filter_alpha = 0.7  # 0=이전값만, 1=새값만 (0.7=빠른 반응)
+        # Velocity Low-pass Filter (떨림 방지)
+        self.velocity_filter_alpha = 0.5  # 0=이전값만, 1=새값만 (0.5=부드러움)
         self.prev_velocity = np.array([0.0, 0.0, 0.0])
+        
+        # PD 제어용 이전 오차 (D항)
+        self.prev_error = np.array([0.0, 0.0, 0.0])
+        self.k_d = 0.1  # 미분 게인 (떨림 억제)
         
         # EKF 초기화 (10Hz)
         self.ekf = None
@@ -118,6 +123,26 @@ class RobotControlNode(Node):
         self.filtered_face_pos = None
         self.filtered_face_time = None  # 마지막 수신 시간
         
+        # J6 제어용: 얼굴 이미지 X 좌표 (화면 중앙 유지)
+        self.face_image_x = None  # 얼굴 중심 X 좌표 (pixel)
+        self.face_image_y = None  # 얼굴 중심 Y 좌표 (pixel)
+        self.image_center_x = 320.0  # 이미지 중앙 (640x480 기준)
+        self.image_center_y = 240.0  # 이미지 중앙 Y
+        
+        # 시작 자세 저장 (누적 방지)
+        self.start_rx = None
+        self.start_rz = None
+        
+        # 조인트 상태 저장 (토픽 구독으로)
+        self.current_joints_deg = [0.0, 0.0, 90.0, 0.0, 90.0, 0.0]  # degrees
+        self.joint_state_sub = self.create_subscription(
+            JointState, '/dsr01/joint_states', self.joint_state_callback, 10)
+        
+        # 얼굴 이미지 좌표 구독 (J6 제어용)
+        from std_msgs.msg import Float32MultiArray
+        self.face_sub = self.create_subscription(
+            Float32MultiArray, '/face_detection/faces', self.face_image_callback, 10)
+        
         # Servol 실시간 제어 퍼블리셔 (1kHz)
         if self.use_servol_rt:
             self.servol_pub = self.create_publisher(
@@ -136,6 +161,13 @@ class RobotControlNode(Node):
             self.get_logger().info("  ⚠️  EKF: OFF")
         self.get_logger().info("  키: 's'=시작 추적, 'h'=홈, 'q'=종료")
         self.get_logger().info("=" * 60)
+    
+    def face_image_callback(self, msg):
+        """얼굴 이미지 좌표 수신 (자세 제어용)"""
+        if len(msg.data) >= 4:
+            # [center_x, center_y, width, height]
+            self.face_image_x = msg.data[0]
+            self.face_image_y = msg.data[1]
     
     def marker_callback(self, msg):
         """Red 큐브 마커 수신 - 로봇 좌표계 목표 위치 (6DOF)"""
@@ -208,13 +240,29 @@ class RobotControlNode(Node):
         
         # 4. Dead zone (너무 가까우면 무시)
         if distance < self.dead_zone:
+            self.prev_error = error.copy()  # 오차 저장
             return None
         
-        # 5. 속도 벡터 계산 (비례 제어)
-        velocity = error * self.k_p
+        # 5. PD 제어: 속도 벡터 계산
+        # P항: 오차에 비례
+        p_term = error * self.k_p
+        
+        # D항: 오차 변화율에 비례 (떨림 억제)
+        error_derivative = (error - self.prev_error) / self.control_period
+        d_term = error_derivative * self.k_d
+        self.prev_error = error.copy()
+        
+        # PD 합산
+        velocity = p_term - d_term  # D항은 뺌 (급격한 변화 억제)
         
         # 6. 속도 크기 제한
         velocity_norm = np.linalg.norm(velocity)
+        
+        # 최소 속도 임계값 (떨림 방지)
+        min_velocity = 5.0  # mm/s
+        if velocity_norm < min_velocity and distance < self.dead_zone * 2:
+            return None
+        
         if velocity_norm > self.v_max:
             velocity = velocity * (self.v_max / velocity_norm)
         
@@ -511,7 +559,11 @@ def main(args=None):
                         tcp_result = get_current_posx()
                         if tcp_result and len(tcp_result) > 0 and len(tcp_result[0]) >= 6:
                             current_tcp = list(tcp_result[0])
+                            # 방향 추종용: 시작 Rx, Rz 저장 (누적 방지)
+                            node.start_rx = current_tcp[3]
+                            node.start_rz = current_tcp[5]
                             node.get_logger().info(f"✅ 추적 준비 완료! TCP: ({current_tcp[0]:.0f}, {current_tcp[1]:.0f}, {current_tcp[2]:.0f})mm")
+                            node.get_logger().info(f"   시작 자세: Rx={node.start_rx:.1f}°, Rz={node.start_rz:.1f}°")
                         else:
                             node.get_logger().warn("⚠️ TCP 읽기 실패 (빈 응답)")
                         node.state = "IDLE"  # 얼굴 감지 시 자동 TRACKING 전환
@@ -589,71 +641,193 @@ def main(args=None):
                     # 타임아웃 - 얼굴 위치 초기화
                     node.filtered_face_pos = None
                 
-                # Velocity 계산 (손목 기준으로 제어)
-                velocity = node.track_face(node.target_pos, wrist_tcp)
+                # ================================================================
+                # 완전한 6DOF 추종 제어 (J1 우선 + 위치 + 자세)
+                # ================================================================
+                # 0단계: J1 우선 회전 (여유 공간 확보)
+                # 1단계: 위치 제어 (X, Y, Z)
+                # 2단계: 자세 제어 (Rx, Rz)
+                # ================================================================
                 
-                # 안전 경고 간소화 (중복 제거)
-                if velocity is None:
+                if node.target_pos is None or node.filtered_face_pos is None:
                     continue
                 
-                if velocity is not None:
-                    # 그리퍼 끝점 목표 계산 (위치만 제어)
-                    target_gripper = current_tcp.copy()
-                    target_gripper[0] += velocity[0] * node.control_period
-                    target_gripper[1] += velocity[1] * node.control_period
-                    target_gripper[2] += velocity[2] * node.control_period
-                    
-                    # ========================================
-                    # J4 활성화: Rx (Roll) 조절
-                    # 얼굴이 좌우로 움직이면 손목도 따라 기울임
-                    # ========================================
-                    # 얼굴 Y 오차에 따른 Rx 조절 (J4 사용)
-                    face_y_error = node.target_pos[1] - current_tcp[1]  # 좌우 오차 (mm)
-                    rx_gain = 0.02  # deg/mm (조절 가능: 클수록 J4 많이 사용)
-                    rx_delta = face_y_error * rx_gain
-                    rx_delta = max(-15.0, min(15.0, rx_delta))  # ±15도 제한
-                    
-                    # ========================================
-                    # J6 완전 고정: Rz (Yaw) 변경 없음
-                    # ========================================
-                    
-                    target_gripper[3] = current_tcp[3] + rx_delta  # Rx 조절 (J4)
-                    target_gripper[4] = current_tcp[4]  # Ry 고정 (J5는 위치로 제어됨)
-                    target_gripper[5] = current_tcp[5]  # Rz 완전 고정 (J6)
-                    
-                    # 손목 중심 계산 (그리퍼 끝점에서 228.6mm 뒤로)
-                    import math
-                    rx_rad = math.radians(target_gripper[3])
-                    ry_rad = math.radians(target_gripper[4])
-                    offset_x = node.tcp_offset_z * (-math.sin(ry_rad))
-                    offset_y = node.tcp_offset_z * (math.sin(rx_rad) * math.cos(ry_rad))
-                    offset_z = node.tcp_offset_z * (math.cos(rx_rad) * math.cos(ry_rad))
-                    
-                    target_tcp = target_gripper.copy()
-                    target_tcp[0] -= offset_x
-                    target_tcp[1] -= offset_y
-                    target_tcp[2] -= offset_z
-                    
-                    # 속도 노름 계산
-                    v_norm = float(np.linalg.norm(velocity))
-                    
-                    # 로봇 이동
-                    if node.use_servol_rt:
-                        # Servol 실시간 제어 (1kHz, 부드러움)
-                        node.send_servol_command(target_tcp, v_norm)
-                    else:
-                        # amovel 비동기 제어 (10Hz)
-                        amovel(target_tcp, vel=v_norm, acc=node.a_max)
-                    
-                    # 오차 계산 (로그용 - XYZ만)
-                    error = np.array(node.target_pos[:3]) - np.array(current_tcp[:3])
-                    error_norm = np.linalg.norm(error)
-                    
-                    node.get_logger().info(
-                        f"🎯 Error: {error_norm:.1f}mm | "
-                        f"Vel: {v_norm:.1f}mm/s | "
-                        f"TCP: [{current_tcp[0]:.0f}, {current_tcp[1]:.0f}, {current_tcp[2]:.0f}]"
-                    )
+                # 현재 얼굴 위치와 TCP 위치
+                face_pos = np.array(node.filtered_face_pos)  # mm (실제 얼굴)
+                target_pos = np.array(node.target_pos[:3])  # mm (안전거리 적용된 목표)
+                tcp_pos = np.array(current_tcp[:3])  # mm
+                
+                # ========================================
+                # 0. J1 우선 제어 (베이스 회전 - 여유 공간 확보)
+                # ========================================
+                # 목표: 얼굴이 로봇 정면에 오도록 J1 회전
+                # 현재 J1 읽기
+                current_j1 = 0.0
+                current_joints = [0.0, 0.0, 90.0, 0.0, 90.0, 0.0]  # 기본값
+                try:
+                    joint_result = get_current_posj()
+                    # DSR API는 튜플 (joints, sol) 형태로 반환할 수 있음
+                    if joint_result is not None:
+                        if isinstance(joint_result, (list, tuple)):
+                            if len(joint_result) >= 6:
+                                # [j1, j2, j3, j4, j5, j6] 형태
+                                current_joints = list(joint_result[:6])
+                                current_j1 = float(current_joints[0])
+                            elif len(joint_result) >= 1 and isinstance(joint_result[0], (list, tuple)):
+                                # ((j1, j2, j3, j4, j5, j6), sol) 형태
+                                current_joints = list(joint_result[0])
+                                current_j1 = float(current_joints[0])
+                except Exception as e:
+                    node.get_logger().warn(f"⚠️ Joint 읽기 실패: {e}", throttle_duration_sec=2.0)
+                
+                # 얼굴 방향 각도 계산 (XY 평면에서)
+                # atan2(Y, X) → 얼굴이 있는 방향
+                face_angle_rad = math.atan2(face_pos[1], face_pos[0])
+                face_angle_deg = math.degrees(face_angle_rad)
+                
+                # J1 목표 = 얼굴 방향 (로봇 정면이 얼굴을 향하도록)
+                # 단, 급격한 회전 방지를 위해 점진적으로
+                j1_error = face_angle_deg - current_j1
+                
+                # J1 제어 게인 (크면 빠르게 회전)
+                j1_gain = 0.5  # 50% 반영 (더 적극적으로)
+                j1_delta = j1_error * j1_gain
+                j1_delta = max(-15.0, min(15.0, j1_delta))  # ±15°/cycle 제한 (증가)
+                
+                # J1 안전 범위 제한 (±150°)
+                target_j1 = current_j1 + j1_delta
+                target_j1 = max(-150.0, min(150.0, target_j1))
+                
+                # J1이 충분히 정렬되었는지 확인
+                j1_aligned = abs(j1_error) < 10.0  # 10° 이내면 정렬됨 (더 엄격)
+                
+                # ========================================
+                # 1. 위치 제어 (X, Y, Z)
+                # ========================================
+                # PD 제어로 속도 계산
+                velocity = node.track_face(node.target_pos, current_tcp)
+                
+                if velocity is None:
+                    # Dead zone 안이거나 안전 영역 밖
+                    # 하지만 J1은 계속 정렬
+                    if not j1_aligned:
+                        # J1만 움직이기 (amovej 비동기)
+                        target_joints = current_joints.copy()
+                        target_joints[0] = target_j1
+                        amovej(target_joints, vel=30.0, acc=60.0)
+                        node.get_logger().info(
+                            f"🔄 J1 정렬 | J1: {current_j1:.1f}° → {target_j1:.1f}° (오차: {j1_error:.1f}°)"
+                        )
+                    continue
+                
+                # 위치 업데이트 (J1 정렬 정도에 따라 속도 조절)
+                # J1이 정렬 안 됐으면 위치 이동 속도 감소
+                speed_factor = 1.0 if j1_aligned else 0.5
+                
+                target_gripper = current_tcp.copy()
+                target_gripper[0] += velocity[0] * node.control_period * speed_factor
+                target_gripper[1] += velocity[1] * node.control_period * speed_factor
+                target_gripper[2] += velocity[2] * node.control_period * speed_factor
+                
+                # ========================================
+                # 2. 자세 제어 (Rx, Ry, Rz)
+                # ========================================
+                # TCP → 얼굴 방향 벡터
+                direction = face_pos - tcp_pos
+                distance = np.linalg.norm(direction)
+                
+                if distance < 100.0:  # 10cm 미만은 무시
+                    continue
+                
+                direction_norm = direction / distance
+                
+                # --- Rz (J6): 좌우 회전 (이미지 X 기반) ---
+                rz_delta = 0.0
+                if node.face_image_x is not None:
+                    face_x_error = node.face_image_x - node.image_center_x  # pixel
+                    rz_gain = 0.05  # deg/pixel
+                    rz_delta = face_x_error * rz_gain
+                    rz_delta = max(-25.0, min(25.0, rz_delta))
+                
+                # start_rz가 None이면 현재값으로 초기화
+                if node.start_rz is None:
+                    node.start_rz = current_tcp[5]
+                if node.start_rx is None:
+                    node.start_rx = current_tcp[3]
+                
+                base_rz = node.start_rz
+                target_gripper[5] = base_rz + rz_delta
+                
+                # --- Rx (J4): 상하 기울임 (Pitch 기반) ---
+                horizontal_dist = math.sqrt(direction[0]**2 + direction[1]**2)
+                if horizontal_dist > 10.0:  # 너무 가까우면 무시
+                    pitch_rad = math.atan2(-direction[2], horizontal_dist)
+                    pitch_deg = math.degrees(pitch_rad)
+                    rx_delta = pitch_deg * 0.3  # 30% 게인
+                    rx_delta = max(-25.0, min(25.0, rx_delta))
+                else:
+                    rx_delta = 0.0
+                
+                base_rx = node.start_rx
+                target_gripper[3] = base_rx + rx_delta
+                
+                # --- Ry (J5): 고정 (IK가 자동 계산) ---
+                target_gripper[4] = current_tcp[4]
+                
+                # ========================================
+                # 3. 안전 영역 클램핑
+                # ========================================
+                # XY 반경 체크
+                r_xy = math.sqrt(target_gripper[0]**2 + target_gripper[1]**2)
+                if r_xy < node.safe_r_min:
+                    scale = node.safe_r_min / r_xy if r_xy > 0 else 1.0
+                    target_gripper[0] *= scale
+                    target_gripper[1] *= scale
+                elif r_xy > node.safe_r_max:
+                    scale = node.safe_r_max / r_xy
+                    target_gripper[0] *= scale
+                    target_gripper[1] *= scale
+                
+                # Z 높이 클램핑
+                target_gripper[2] = max(node.safe_z_min, min(800.0, target_gripper[2]))
+                
+                # ========================================
+                # 4. 손목 TCP 계산 (그리퍼 → 손목)
+                # ========================================
+                rx_rad = math.radians(target_gripper[3])
+                ry_rad = math.radians(target_gripper[4])
+                offset_x = node.tcp_offset_z * (-math.sin(ry_rad))
+                offset_y = node.tcp_offset_z * (math.sin(rx_rad) * math.cos(ry_rad))
+                offset_z = node.tcp_offset_z * (math.cos(rx_rad) * math.cos(ry_rad))
+                
+                target_tcp = target_gripper.copy()
+                target_tcp[0] -= offset_x
+                target_tcp[1] -= offset_y
+                target_tcp[2] -= offset_z
+                
+                # ========================================
+                # 5. 로봇 이동 명령 (amovel + 필요시 J1 보정)
+                # ========================================
+                v_norm = float(np.linalg.norm(velocity))
+                v_norm = max(30.0, min(node.v_max, v_norm))  # 30~v_max mm/s
+                
+                # J1 정렬이 안 됐으면 속도 감소
+                if not j1_aligned:
+                    v_norm *= 0.5
+                
+                amovel(target_tcp, vel=v_norm, acc=node.a_max)
+                
+                # ========================================
+                # 6. 로그 출력
+                # ========================================
+                pos_error = np.linalg.norm(target_pos - tcp_pos)
+                j1_status = "✅" if j1_aligned else "🔄"
+                node.get_logger().info(
+                    f"🎯 6DOF | Err: {pos_error:.0f}mm | "
+                    f"J1: {current_j1:.1f}°→{target_j1:.1f}°{j1_status} | "
+                    f"FaceAngle: {face_angle_deg:.1f}° | "
+                    f"Vel: {v_norm:.0f}mm/s"
+                )
     
     except KeyboardInterrupt:
         print("\n키보드 인터럽트")
