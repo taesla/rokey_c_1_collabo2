@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="m0609" >
+
+  <xacro:arg name="color"   default="white"/>
+  <xacro:arg name="gripper" default="none"/>
+  <xacro:arg name="namespace" default=""/>
+  <xacro:arg name="use_gazebo" default="false"/>
+  
+  <xacro:property name="gz" value="$(arg use_gazebo)"/>
+  <xacro:property name="cr" value="$(arg color)"/>
+  <xacro:property name="gr" value="$(arg gripper)"/>
+
+  <xacro:if value="${cr == 'white'}">
+     <xacro:include filename="$(find dsr_description2)/xacro/macro.m0609.white.xacro" />
+  </xacro:if>
+  <xacro:if value="${cr == 'blue'}">
+     <xacro:include filename="$(find dsr_description2)/xacro/macro.m0609.blue.xacro" />
+  </xacro:if>
+
+  <xacro:m0609 namespace="$(arg namespace)"/>
+
+  <link name="world" />
+  <!-- World fixed joint-->
+  <joint name="world_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="world"/>
+    <child link="base_link"/>
+  </joint>
+  <xacro:if value="${gz}">
+    <xacro:include filename="$(find dsr_description2)/ros2_control/m0609.gz_ros2_control.xacro" />
+    <xacro:m0609_gz_ros2_control namespace="$(arg namespace)"/>
+  </xacro:if>
+  <xacro:unless value="${gz}">
+    <xacro:include filename="$(find dsr_description2)/ros2_control/m0609.ros2_control.xacro" />
+    <xacro:m0609_ros2_control name="m0609"/>
+  </xacro:unless>
+
+  <!-- ============================================== -->
+  <!-- OnRobot RG2 Gripper + Intel RealSense D435i   -->
+  <!-- ============================================== -->
+  
+  <!-- RG2 Gripper attached to link_6 (tool flange) -->
+  <xacro:include filename="$(find dsr_description2)/xacro/onrobot_rg2.urdf.xacro" />
+  <xacro:onrobot_rg2 prefix="gripper" parent="link_6">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:onrobot_rg2>
+  
+  <!-- Intel RealSense D435i Camera -->
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro" />
+  
+  <!-- Camera mounted on link_6 - position adjusted to match gripper mount -->
+  <xacro:sensor_d435i parent="link_6" name="camera" use_nominal_extrinsics="true">
+    <origin xyz="0.000 0.055 0.0" rpy="-1.5708 -1.5708 0"/>
+  </xacro:sensor_d435i>
+  
+</robot>
